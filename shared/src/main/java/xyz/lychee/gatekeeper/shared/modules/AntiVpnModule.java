@@ -1,0 +1,160 @@
+package xyz.lychee.gatekeeper.shared.modules;
+
+import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonParserException;
+import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
+import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
+import xyz.lychee.gatekeeper.shared.util.ConditionSet;
+import xyz.lychee.gatekeeper.shared.util.RandomUtil;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+
+public class AntiVpnModule extends AbstractModule {
+    private final Map<Integer, Boolean> checked = new HashMap<>();
+    private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
+    private final Set<String> whitelist = new HashSet<>();
+    private final List<ConditionSet.Provider> providers = new ArrayList<>();
+    private HttpClient httpClient;
+    private Semaphore semaphore;
+    private int connect_timeout;
+    private int read_timeout;
+    private boolean blacklist_asn;
+
+    public AntiVpnModule(Gatekeeper<?> gatekeeper) {
+        super(gatekeeper, "AntiVpn");
+    }
+
+    @Override
+    public boolean handlePreLogin(InetAddress address, String name, int dataAddress) {
+        if (this.providers.isEmpty()) {
+            return false;
+        }
+
+        int id;
+        if (this.blacklist_asn) {
+            int asn = GeoipManager.INSTANCE.getAsnCode(dataAddress);
+            id = asn > 0 ? asn : dataAddress;
+        } else {
+            id = dataAddress;
+        }
+
+        Boolean cached = this.checked.get(id);
+        if (cached != null) {
+            return cached;
+        }
+
+        String ip = address.getHostAddress();
+        if (this.whitelist.contains(ip)) {
+            this.checked.put(id, Boolean.FALSE);
+            return false;
+        }
+
+        int index = roundRobinIndex.getAndUpdate(i -> (i + 1) % this.providers.size());
+        ConditionSet.Provider provider = this.providers.get(index);
+
+        String urlStr = provider.getUrl().replace("%address%", ip);
+
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(urlStr))
+                .timeout(Duration.ofMillis(this.connect_timeout + this.read_timeout))
+                .GET();
+
+        provider.getHeaders().forEach(requestBuilder::header);
+
+        if (this.semaphore != null) {
+            try {
+                this.semaphore.acquire();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                getGatekeeper().logger().log(Level.WARNING, "Interrupted while waiting for VPN check permit", e);
+                return false;
+            }
+        }
+
+        try {
+            return this.httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
+                    .thenApply(response -> {
+                        int statusCode = response.statusCode();
+                        if (statusCode == 200) {
+                            try (InputStream is = response.body()) {
+                                boolean detected = provider.matches(JsonParser.object().from(is));
+                                this.checked.put(id, detected);
+                                return detected;
+                            } catch (IOException | JsonParserException ex) {
+                                this.getGatekeeper().logger().log(Level.WARNING, ex.getMessage(), ex);
+                            }
+                        }
+                        return false;
+                    }).join();
+        } finally {
+            if (this.semaphore != null) {
+                this.semaphore.release();
+            }
+        }
+    }
+
+    @Override
+    public boolean handlePostLogin(InetAddress address, String name, int dataAddress) {
+        return false;
+    }
+
+    @Override
+    public boolean handleDisconnect(InetAddress address, String name, int dataAddress) {
+        return false;
+    }
+
+    @Override
+    public boolean load() throws IOException {
+        this.whitelist.clear();
+        this.providers.clear();
+
+        if (this.httpClient != null) {
+            this.httpClient.close();
+        }
+
+        this.connect_timeout = this.getConfig().getInt("connect_timeout");
+        this.read_timeout = this.getConfig().getInt("read_timeout");
+        this.blacklist_asn = this.getConfig().getBoolean("blacklist_asn");
+
+        int max_concurrent_checks = this.getConfig().getInt("max_concurrent_checks");
+        this.semaphore = max_concurrent_checks > 0 ? new Semaphore(max_concurrent_checks) : null;
+
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(this.connect_timeout))
+                .executor(Executors.newFixedThreadPool(Math.max(1, this.getConfig().getInt("threads"))))
+                .build();
+
+        this.whitelist.addAll(this.getConfig().getStringList("whitelist"));
+
+        this.getConfig().getSection("checks")
+                .getKeys()
+                .stream()
+                .map(key -> this.getConfig().getSection("checks." + key))
+                .filter(section -> section.getBoolean("enabled", false))
+                .forEach(section -> {
+                    String condStr = section.getString("condition", null);
+                    String url = section.getString("url", "");
+                    int priority = section.getInt("priority", 0);
+                    List<String> headers = section.getStringList("headers", Collections.emptyList());
+
+                    ConditionSet cs = condStr != null ? ConditionSet.compile(condStr) : null;
+                    this.providers.add(new ConditionSet.Provider(url, priority, headers, cs));
+                });
+        this.providers.sort(Comparator.comparingInt(ConditionSet.Provider::getPriority));
+        this.roundRobinIndex.set(RandomUtil.RANDOM.nextInt(this.providers.size()));
+
+        return true;
+    }
+}

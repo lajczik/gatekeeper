@@ -1,0 +1,25 @@
+enabled: false
+priority: 5
+log: "Connection from %address%/%name% rejected: blocked country!" # Set empty "" to disable the logger
+kick:
+  - "%prefix%"
+  - ""
+  - "&#FF5555An error occurred while connecting to the server!"
+  - "&#C7C7C7Connections from this country are blocked."
+values:
+  # If true, blocks all countries on the list; if false, blocks all countries not listed.
+  list_mode: false
+  # Alpha-2 codes list: https://en.wikipedia.org/wiki/ISO_3166-1#Current_codes
+  list:
+    - "US"
+    - "PL"
+    - "UA"
+    - "DE"
+    - "GB"
+    - "CZ"
+    - "SK"
+    - "FR"
+    - "NL"
+    - "SE"
+    - "BE"
+    - "DK"

@@ -1,0 +1,10 @@
+{
+  "id": "gatekeeper",
+  "name": "Gatekeeper",
+  "version": "${project.version}",
+  "authors": [
+    "lychee"
+  ],
+  "dependencies": [],
+  "main": "xyz.lychee.gatekeeper.velocity.VelocityMain"
+}

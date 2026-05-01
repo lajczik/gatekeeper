@@ -1,0 +1,12 @@
+author: lychee
+version: ${project.version}
+main: xyz.lychee.gatekeeper.bukkit.BukkitMain
+name: Gatekeeper
+api-version: 1.13
+folia-supported: true
+
+commands:
+  gatekeeper:
+    description: "Gatekeeper command manager"
+    usage: "/gatekeeper <whitelist|blacklist|info|reload>"
+    aliases: [ gk ]

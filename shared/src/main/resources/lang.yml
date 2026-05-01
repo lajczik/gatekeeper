@@ -1,0 +1,46 @@
+messages:
+  no_permission: '%prefix% &8• &7You do not have permission to execute this command.'
+
+  main_usage:
+    - '%prefix% &8• &7Available commands:'
+    - ' &8» &f/gatekeeper whitelist add/remove (address/name) &8- &7Adds/Removes a user or address to/from the whitelist;'
+    - ' &8» &f/gatekeeper blacklist add/remove (address/name) &8- &7Adds/Removes a user or address to/from the blacklist;'
+    - ' &8» &f/gatekeeper info (address/name) &8- &7Shows information about an address or name.'
+    - ' &8» &f/gatekeeper reload &8- &7Reloads lang and config files'
+
+  info:
+    usage:
+      - '%prefix% &8• &7Correct usage:'
+      - ' &8» &f/gatekeeper info (address/name) &8- &7Shows information about an address or name.'
+    player:
+      - '&#FF5555Information about &f{}&#FF5555:'
+      - '&#FF5555Whitelist: &f{}'
+      - '&#FF5555Blacklist: &f{}'
+      - '&#FF5555IP Addresses: &f{}'
+    error: '%prefix% &8• &7Address or player {} was not found.'
+
+  whitelist:
+    usage:
+      - '%prefix% &8• &7Correct usage:'
+      - ' &8» &f/gatekeeper whitelist add (address/name) &8- &7Adds a user or address to the whitelist;'
+      - ' &8» &f/gatekeeper whitelist remove (address/name) &8- &7Removes a user or address from the whitelist.'
+    added: '%prefix% &8• &7Player {} has been whitelisted.'
+    removed: '%prefix% &8• &7Player {} has been removed from the whitelist.'
+    missing: '%prefix% &8• &7Player {} is not on the whitelist.'
+    exists: '%prefix% &8• &7Player {} is already on the whitelist.'
+    error: '%prefix% &8• &7Address or player {} was not found.'
+
+  blacklist:
+    usage:
+      - '%prefix% &8• &7Correct usage:'
+      - ' &8» &f/gatekeeper blacklist add (address/name) &8- &7Adds a user or address to the blacklist;'
+      - ' &8» &f/gatekeeper blacklist remove (address/name) &8- &7Removes a user or address from the blacklist.'
+    added: '%prefix% &8• &7Player {} has been blacklisted.'
+    removed: '%prefix% &8• &7Player {} has been removed from the blacklist.'
+    missing: '%prefix% &8• &7Player {} is not on the blacklist.'
+    exists: '%prefix% &8• &7Player {} is already on the blacklist.'
+    error: '%prefix% &8• &7Address or player {} was not found.'
+
+  reload:
+    config: '%prefix% &8• &7Configuration has been reloaded.'
+    lang: '%prefix% &8• &7Language has been reloaded.'

@@ -1,0 +1,10 @@
+enabled: true
+priority: 3
+log: "Connection from %address%/%name% rejected: too many accounts detected from this IP!" # Set empty "" to disable the logger
+kick:
+  - "%prefix%"
+  - ""
+  - "&#FF5555An error occurred while connecting to the server!"
+  - "&#C7C7C7Too many accounts are using this IP address at the same time."
+values:
+  per_ip_limit: 3

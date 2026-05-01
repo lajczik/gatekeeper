@@ -1,0 +1,4 @@
+author: lychee
+version: ${project.version}
+main: xyz.lychee.gatekeeper.bungee.BungeeMain
+name: Gatekeeper

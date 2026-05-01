@@ -1,0 +1,11 @@
+enabled: true
+priority: 2
+log: "Connection from %address%/%name% rejected: connection rate limit exceeded!" # Set empty "" to disable the logger
+kick:
+  - "%prefix%"
+  - ""
+  - "&#FF5555An error occurred while connecting to the server!"
+  - "&#C7C7C7Too many players are trying to connect to the server right now, please try again in a moment."
+values:
+  server_limit: 300 # 1 connection every 300 ms
+  ip_limit: 2000 # 1 connection every 2000 ms

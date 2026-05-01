@@ -1,0 +1,96 @@
+enabled: true
+priority: 6
+log: "Connection from %address%/%name% rejected: VPN detected!" # Set empty "" to disable the logger
+kick:
+  - "%prefix%"
+  - ""
+  - "&#FF5555An error occurred while connecting to the server!"
+  - "&#C7C7C7Your internet provider is blocked, make sure your VPN is turned off."
+values:
+  threads: 4
+  max_concurrent_checks: 30
+  read_timeout: 1000
+  connect_timeout: 500
+  blacklist_asn: true
+
+  whitelist:
+    - "127.0.0.1"
+    - "0:0:0:0:0:0:0:1"
+    - "localhost"
+    - "172.17.0.1"
+    - "172.18.0.1"
+    - "172.19.0.1"
+    - "192.168.1.1"
+    - "192.168.0.1"
+    - "10.0.0.1"
+
+  checks:
+    # https://proxycheck.io/
+    #
+    # No Key: 100 daily queries.
+    # Free Key 1,000 daily queries.
+    # Paid Key: 10k-512m daily queries.
+    #
+    # Get a free key here: https://proxycheck.io/pricing/
+    proxycheck_io:
+      enabled: true
+      url: "https://proxycheck.io/v1/%address%?key={API_KEY}"
+      priority: 1
+      condition: "proxy=yes"
+
+    # https://funkemunky.cc/
+    #
+    # No Key: unlimited queries.
+    funkemunky_cc:
+      enabled: true
+      url: "https://funkemunky.cc/vpn?ip=%address%"
+      priority: 2
+      condition: "accuracyRadius>500"
+
+    # https://ip-api.com/
+    #
+    # No Key: unlimited queries.
+    ip-api_com:
+      enabled: true
+      url: "https://api.ipapi.is/?q=%address%"
+      priority: 3
+      condition: "is_vpn=true|is_proxy=true"
+
+    # https://vpnapi.io/
+    #
+    # No Key: 100 daily queries.
+    # Free Key 1,000 daily queries.
+    # Paid Key: 10k-200k daily queries.
+    #
+    # Get a free key here: https://vpnapi.io/signup
+    vpnapi_io:
+      enabled: false
+      url: "https://vpnapi.io/api/%address%?key={API_KEY}" # If you don't want to use key, you need to remove "?key={API_KEY}"
+      priority: 4
+      condition: "security:vpn=true|security:proxy=true"
+
+    # https://iphub.info/
+    #
+    # Free Key: 1,000 daily queries.
+    # Paid Key: 10k-600k+ daily queries.
+    #
+    # Get a free key here: https://iphub.info/apiKey/newFree
+    iphub_info:
+      enabled: false
+      url: "https://v2.api.iphub.info/ip/%address%"
+      headers:
+        - "X-Key:{API_KEY}"
+      priority: 5
+      condition: "block=1"
+
+    # https://www.ipqualityscore.com/
+    #
+    # Free Key: 5,000 monthly queries.
+    # Paid Key: 50k-5m monthly queries.
+    #
+    # Get a free key here: https://www.ipqualityscore.com/create-account
+    ipqualityscore_com:
+      enabled: false
+      url: "https://ipqualityscore.com/api/json/ip/{API_KEY}/%address%?strictness=0&allow_public_access_points=false"
+      priority: 6
+      condition: "fraud_score>75"

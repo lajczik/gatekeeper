@@ -1,0 +1,5 @@
+name: Gatekeeper
+main: xyz.lychee.gatekeeper.paper.PaperMain
+version: ${project.version}
+api-version: "1.19"
+folia-supported: true

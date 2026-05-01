@@ -1,0 +1,9 @@
+enabled: true
+priority: 1
+log: "Connection from %address%/%name% rejected: player found on blacklist!" # Set empty "" to disable the logger
+kick:
+  - "%prefix%"
+  - ""
+  - "&#FF5555An error occurred while connecting to the server!"
+  - "&#C7C7C7Your IP address is on the blacklist."
+values: { }
