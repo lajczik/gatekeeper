@@ -3,11 +3,6 @@ plugins {
     id("com.gradleup.shadow")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
 dependencies {
     implementation("com.grack:nanojson:1.10")
     implementation("com.zaxxer:HikariCP:7.0.2")

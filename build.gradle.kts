@@ -14,16 +14,7 @@ dependencies {
     implementation(project(":paper"))
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
 tasks {
-    compileJava {
-        options.encoding = "UTF-8"
-    }
-
     shadowJar {
         archiveBaseName.set("Gatekeeper")
         archiveClassifier.set("")
@@ -51,7 +42,6 @@ allprojects {
     dependencies {
         implementation("dev.dejvokep:boosted-yaml:1.3.7")
 
-        //compileOnly("io.netty:netty-all:4.2.7.Final")
         compileOnly("org.projectlombok:lombok:1.18.46")
         annotationProcessor("org.projectlombok:lombok:1.18.46")
     }
@@ -59,6 +49,7 @@ allprojects {
     tasks {
         compileJava {
             options.encoding = "UTF-8"
+            //options.release = 8
         }
 
         processResources {
@@ -76,6 +67,22 @@ allprojects {
             }
 
             outputs.upToDateWhen { false }
+        }
+    }
+
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        }
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    configurations {
+        compileClasspath {
+            attributes {
+                attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+            }
         }
     }
 }

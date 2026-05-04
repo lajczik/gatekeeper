@@ -10,25 +10,8 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.1.0")
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
-
-configurations {
-    compileClasspath {
-        attributes {
-            attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
-        }
-    }
-}
-
 tasks {
     shadowJar {
         minimize()
-    }
-    withType<JavaCompile> {
-        options.release.set(11)
     }
 }
