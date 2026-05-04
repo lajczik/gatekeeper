@@ -14,8 +14,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -25,11 +26,11 @@ import java.util.logging.Logger;
 public class DataManager {
     public static final DataManager INSTANCE = new DataManager();
 
-    private final HashSet<StoredPlayer> players = new HashSet<>();
-    private final HashMap<Integer, HashSet<StoredPlayer>> playersByIp = new HashMap<>();
-    private final HashMap<String, HashSet<StoredPlayer>> playersByName = new HashMap<>();
-    private final HashMap<Integer, Byte> addresses = new HashMap<>();
-    private final HashMap<String, Byte> nicknames = new HashMap<>();
+    private final Set<StoredPlayer> players = ConcurrentHashMap.newKeySet();
+    private final Map<Integer, Set<StoredPlayer>> playersByIp = new ConcurrentHashMap<>();
+    private final Map<String, Set<StoredPlayer>> playersByName = new ConcurrentHashMap<>();
+    private final Map<Integer, Byte> addresses = new ConcurrentHashMap<>();
+    private final Map<String, Byte> nicknames = new ConcurrentHashMap<>();
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private HikariDataSource dataSource;
@@ -72,9 +73,19 @@ public class DataManager {
             String password = yaml.getString("database.password", "");
             boolean useSsl = yaml.getBoolean("database.useSSL", false);
 
-            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl);
+            String jdbcUrl;
+            if (this.currentDbType == DatabaseType.POSTGRESQL) {
+                jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + database + "?ssl=" + useSsl;
+            } else if (this.currentDbType == DatabaseType.MARIADB) {
+                jdbcUrl = "jdbc:mariadb://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl;
+            } else {
+                jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl;
+            }
+
+            config.setJdbcUrl(jdbcUrl);
             config.setUsername(username);
             config.setPassword(password);
+
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
@@ -99,6 +110,10 @@ public class DataManager {
     }
 
     public void close() {
+        if (!this.executor.isShutdown()) {
+            this.executor.shutdown();
+        }
+
         if (this.dataSource != null && !this.dataSource.isClosed()) {
             this.dataSource.close();
         }
@@ -163,11 +178,9 @@ public class DataManager {
     }
 
     public void loadUser(StoredPlayer sp) {
-        synchronized (this) {
-            this.players.add(sp);
-            this.playersByIp.computeIfAbsent(sp.getAddress(), k -> new HashSet<>()).add(sp);
-            this.playersByName.computeIfAbsent(sp.getName(), k -> new HashSet<>()).add(sp);
-        }
+        this.players.add(sp);
+        this.playersByIp.computeIfAbsent(sp.getAddress(), k -> ConcurrentHashMap.newKeySet()).add(sp);
+        this.playersByName.computeIfAbsent(sp.getName(), k -> ConcurrentHashMap.newKeySet()).add(sp);
     }
 
     public boolean hasAccess(int address, EnumAccess access) {
@@ -200,9 +213,9 @@ public class DataManager {
 
     public void updatePlayer(StoredPlayer sp) {
         this.executor.execute(() -> {
-            String sql = (currentDbType == DatabaseType.H2 || currentDbType == DatabaseType.MYSQL)
-                    ? "INSERT IGNORE INTO players (address, nickname) VALUES (?, ?)"
-                    : "INSERT INTO players (address, nickname) VALUES (?, ?) ON CONFLICT DO NOTHING";
+            String sql = (currentDbType == DatabaseType.POSTGRESQL)
+                    ? "INSERT INTO players (address, nickname) VALUES (?, ?) ON CONFLICT DO NOTHING"
+                    : "INSERT IGNORE INTO players (address, nickname) VALUES (?, ?)";
 
             try (Connection conn = this.dataSource.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -253,7 +266,6 @@ public class DataManager {
         try {
             if (AddressUtils.isIpAddress(target)) {
                 InetAddress addr = InetAddress.getByAddress(AddressUtils.parseIp(target));
-
                 return this.addresses.getOrDefault(AddressUtils.addressToInteger(addr), (byte) 0);
             }
         } catch (Exception ignored) {}
