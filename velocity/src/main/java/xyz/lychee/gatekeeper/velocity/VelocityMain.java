@@ -15,7 +15,6 @@ import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bstats.velocity.Metrics;
-import org.slf4j.Logger;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
@@ -29,7 +28,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.file.Path;
-import java.util.logging.Level;
 
 public class VelocityMain implements Gatekeeper<Component> {
     private final ProxyServer proxy;
@@ -59,25 +57,21 @@ public class VelocityMain implements Gatekeeper<Component> {
     @Subscribe
     public void onInit(ProxyInitializeEvent event) {
         this.logger = new VelocityColoredLogger();
-        try {
-            this.metrics = this.metricsFactory.make(this, 27356);
+        this.metrics = this.metricsFactory.make(this, 27356);
 
-            ConfigManager.INSTANCE.loadConfig(this);
-            DataManager.INSTANCE.loadDatabase(this);
-            ModuleManager.INSTANCE.loadChecks(this);
-            GeoipManager.INSTANCE.loadDatabases(this);
-            TaskManager.INSTANCE.loadTasks(this);
+        ConfigManager.INSTANCE.loadConfig(this);
+        DataManager.INSTANCE.loadDatabase(this);
+        ModuleManager.INSTANCE.loadChecks(this);
+        GeoipManager.INSTANCE.loadDatabases(this);
+        TaskManager.INSTANCE.loadTasks(this);
 
-            this.language.loadLanguage();
+        this.language.loadLanguage();
 
-            EventManager eventManager = this.proxy.getEventManager();
-            eventManager.register(this, new VelocityListeners());
+        EventManager eventManager = this.proxy.getEventManager();
+        eventManager.register(this, new VelocityListeners());
 
-            CommandManager commandManager = this.proxy.getCommandManager();
-            commandManager.register(commandManager.metaBuilder("gatekeeper").plugin(this).build(), new VelocityCommand(this));
-        } catch (Exception e) {
-            this.logger.log(Level.SEVERE, "Failed to load plugin", e);
-        }
+        CommandManager commandManager = this.proxy.getCommandManager();
+        commandManager.register(commandManager.metaBuilder("gatekeeper").plugin(this).build(), new VelocityCommand(this));
     }
 
     @Subscribe

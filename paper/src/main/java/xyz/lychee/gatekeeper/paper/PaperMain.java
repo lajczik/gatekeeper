@@ -10,7 +10,6 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
@@ -24,7 +23,6 @@ import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
 import java.io.File;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.logging.Level;
 
 public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, Listener {
     private final LegacyComponentSerializer serializer = LegacyComponentSerializer.builder()
@@ -40,28 +38,23 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
     @Override
     public void onEnable() {
         this.logger = new ColoredLogger(Bukkit.getLogger());
-        try {
-            this.metrics = new Metrics(this, 27416);
-            this.language = new PaperLang(this);
+        this.metrics = new Metrics(this, 27416);
+        this.language = new PaperLang(this);
 
-            ConfigManager.INSTANCE.loadConfig(this);
-            DataManager.INSTANCE.loadDatabase(this);
-            ModuleManager.INSTANCE.loadChecks(this);
-            GeoipManager.INSTANCE.loadDatabases(this);
-            TaskManager.INSTANCE.loadTasks(this);
-            UpdaterManager.INSTANCE.load(this);
+        ConfigManager.INSTANCE.loadConfig(this);
+        DataManager.INSTANCE.loadDatabase(this);
+        ModuleManager.INSTANCE.loadChecks(this);
+        GeoipManager.INSTANCE.loadDatabases(this);
+        TaskManager.INSTANCE.loadTasks(this);
+        UpdaterManager.INSTANCE.load(this);
 
-            this.language.loadLanguage();
+        this.language.loadLanguage();
 
-            PluginManager pm = Bukkit.getPluginManager();
-            pm.registerEvents(new PaperListeners(), this);
+        Bukkit.getPluginManager().registerEvents(new PaperListeners(), this);
 
-            PaperCommand commandHandler = new PaperCommand(this);
-            CommandMap commandMap = Bukkit.getServer().getCommandMap();
-            commandMap.register("gatekeeper", commandHandler);
-        } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Failed to load plugin", e);
-        }
+        PaperCommand commandHandler = new PaperCommand(this);
+        CommandMap commandMap = Bukkit.getServer().getCommandMap();
+        commandMap.register("gatekeeper", commandHandler);
     }
 
     @Override
@@ -98,7 +91,7 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
     @Override
     public CommandPlayer<Component> commandPlayer(Object player) {
-        return new CommandPlayer<Component>(player) {
+        return new CommandPlayer<>(player) {
             @Override
             public boolean hasPermission(String permission) {
                 if (this.getPlayer() instanceof CommandSender) {

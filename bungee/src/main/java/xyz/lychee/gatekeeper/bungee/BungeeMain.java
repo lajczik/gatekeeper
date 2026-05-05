@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,26 +33,22 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
     @Override
     public void onEnable() {
         this.logger = new ColoredLogger(this.getProxy().getLogger());
-        try {
-            this.metrics = new Metrics(this, 27413);
-            this.language = new BungeeLang(this);
+        this.metrics = new Metrics(this, 27413);
+        this.language = new BungeeLang(this);
 
-            ConfigManager.INSTANCE.loadConfig(this);
-            DataManager.INSTANCE.loadDatabase(this);
-            ModuleManager.INSTANCE.loadChecks(this);
-            GeoipManager.INSTANCE.loadDatabases(this);
-            TaskManager.INSTANCE.loadTasks(this);
-            UpdaterManager.INSTANCE.load(this);
+        ConfigManager.INSTANCE.loadConfig(this);
+        DataManager.INSTANCE.loadDatabase(this);
+        ModuleManager.INSTANCE.loadChecks(this);
+        GeoipManager.INSTANCE.loadDatabases(this);
+        TaskManager.INSTANCE.loadTasks(this);
+        UpdaterManager.INSTANCE.load(this);
 
-            this.language.loadLanguage();
+        this.language.loadLanguage();
 
-            PluginManager pm = getProxy().getPluginManager();
-            pm.registerListener(this, new BungeeListeners());
+        PluginManager pm = getProxy().getPluginManager();
+        pm.registerListener(this, new BungeeListeners());
 
-            pm.registerCommand(this, new BungeeCommand(this));
-        } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Failed to load plugin", e);
-        }
+        pm.registerCommand(this, new BungeeCommand(this));
     }
 
     @Override
@@ -90,7 +85,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
 
     @Override
     public CommandPlayer<BaseComponent> commandPlayer(Object player) {
-        return new CommandPlayer<BaseComponent>(player) {
+        return new CommandPlayer<>(player) {
             @Override
             public boolean hasPermission(String permission) {
                 if (this.getPlayer() instanceof CommandSender) {
@@ -118,7 +113,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
                         if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof BaseComponent) {
                             BaseComponent baseComponent = (BaseComponent) kickMessage;
                             getProxy().getPlayers().stream()
-                                    .filter(player -> ((InetSocketAddress)player.getSocketAddress()).getAddress().equals(addr))
+                                    .filter(player -> ((InetSocketAddress) player.getSocketAddress()).getAddress().equals(addr))
                                     .forEach(player -> player.disconnect(baseComponent));
                         }
                         return;

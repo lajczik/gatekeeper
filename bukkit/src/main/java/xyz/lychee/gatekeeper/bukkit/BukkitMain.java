@@ -21,7 +21,6 @@ import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
 import java.io.File;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,30 +32,25 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
     @Override
     public void onEnable() {
         this.logger = new ColoredLogger(Bukkit.getLogger());
+        this.metrics = new Metrics(this, 27416);
+        this.language = new BukkitLang(this);
 
-        try {
-            this.metrics = new Metrics(this, 27416);
-            this.language = new BukkitLang(this);
+        ConfigManager.INSTANCE.loadConfig(this);
+        DataManager.INSTANCE.loadDatabase(this);
+        ModuleManager.INSTANCE.loadChecks(this);
+        GeoipManager.INSTANCE.loadDatabases(this);
+        TaskManager.INSTANCE.loadTasks(this);
+        UpdaterManager.INSTANCE.load(this);
 
-            ConfigManager.INSTANCE.loadConfig(this);
-            DataManager.INSTANCE.loadDatabase(this);
-            ModuleManager.INSTANCE.loadChecks(this);
-            GeoipManager.INSTANCE.loadDatabases(this);
-            TaskManager.INSTANCE.loadTasks(this);
-            UpdaterManager.INSTANCE.load(this);
+        this.language.loadLanguage();
 
-            this.language.loadLanguage();
+        PluginManager pm = Bukkit.getPluginManager();
+        pm.registerEvents(new BukkitListeners(), this);
 
-            PluginManager pm = Bukkit.getPluginManager();
-            pm.registerEvents(new BukkitListeners(), this);
-
-            BukkitCommand commandHandler = new BukkitCommand(this);
-            PluginCommand command = this.getCommand("gatekeeper");
-            command.setExecutor(commandHandler);
-            command.setTabCompleter(commandHandler);
-        } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Failed to load plugin", e);
-        }
+        BukkitCommand commandHandler = new BukkitCommand(this);
+        PluginCommand command = this.getCommand("gatekeeper");
+        command.setExecutor(commandHandler);
+        command.setTabCompleter(commandHandler);
     }
 
     @Override
@@ -163,7 +157,6 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
 
             while (matcher.find()) {
                 String hex = matcher.group(1);
-                // zamień na format §x§r§r§g§g§b§b
                 StringBuilder replacement = new StringBuilder("§x");
                 for (char c : hex.toCharArray()) {
                     replacement.append('§').append(c);
@@ -172,7 +165,6 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
             }
             matcher.appendTail(buffer);
 
-            // zamiana & na §
             return ChatColor.translateAlternateColorCodes('&', buffer.toString());
         }
     }
