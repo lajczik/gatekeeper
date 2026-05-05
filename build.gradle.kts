@@ -42,6 +42,7 @@ allprojects {
     dependencies {
         implementation("dev.dejvokep:boosted-yaml:1.3.7")
 
+        compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
         compileOnly("org.projectlombok:lombok:1.18.46")
         annotationProcessor("org.projectlombok:lombok:1.18.46")
     }
