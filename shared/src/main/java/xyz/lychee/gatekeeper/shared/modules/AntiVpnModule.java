@@ -17,13 +17,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 public class AntiVpnModule extends AbstractModule {
-    private final Map<Integer, Boolean> checked = new HashMap<>();
+    private final Map<Integer, Boolean> checked = new ConcurrentHashMap<>();
+    private final Map<Integer, CompletableFuture<Boolean>> pendingFutures = new ConcurrentHashMap<>();
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
     private final Set<String> whitelist = new HashSet<>();
     private final List<ConditionSet.Provider> providers = new ArrayList<>();
@@ -74,6 +77,11 @@ public class AntiVpnModule extends AbstractModule {
 
         provider.getHeaders().forEach(requestBuilder::header);
 
+        CompletableFuture<Boolean> pendingFuture = this.pendingFutures.get(id);
+        if (pendingFuture != null) {
+            return pendingFuture.join();
+        }
+
         if (this.semaphore != null) {
             try {
                 this.semaphore.acquire();
@@ -85,8 +93,9 @@ public class AntiVpnModule extends AbstractModule {
         }
 
         try {
-            return this.httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
+            CompletableFuture<Boolean> future = this.httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
                     .thenApply(response -> {
+                        this.pendingFutures.remove(id);
                         int statusCode = response.statusCode();
                         if (statusCode == 200) {
                             try (InputStream is = response.body()) {
@@ -97,8 +106,13 @@ public class AntiVpnModule extends AbstractModule {
                         }
                         return false;
                     })
-                    .exceptionally(t -> false)
-                    .join();
+                    .exceptionally(t -> {
+                        this.pendingFutures.remove(id);
+                        return false;
+                    });
+
+            this.pendingFutures.put(id, future);
+            return future.join();
         } finally {
             if (this.semaphore != null) {
                 this.semaphore.release();
