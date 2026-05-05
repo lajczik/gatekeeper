@@ -58,7 +58,7 @@ public class RandomUtil {
         if (minutes > 0) sb.append(minutes).append("m ");
 
         if (days > 0) {
-            if (!sb.isEmpty()) {
+            if (sb.length() > 0) {
                 sb.setLength(sb.length() - 1);
             }
             return sb.toString();
@@ -75,7 +75,7 @@ public class RandomUtil {
         } else {
             if (seconds > 0) {
                 sb.append(seconds).append('s');
-            } else if (!sb.isEmpty()) {
+            } else if (sb.length() > 0) {
                 sb.setLength(sb.length() - 1);
             } else {
                 sb.append("0s");
