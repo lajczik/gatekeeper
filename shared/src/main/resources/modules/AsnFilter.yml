@@ -9,7 +9,7 @@ kick:
 values:
   auto_update:
     asn_pattern: "\\d{4,6}"
-    interval: 12
+    interval: 8
     sources:
       - "https://raw.githubusercontent.com/bountyyfi/bad-asn-list/refs/heads/main/all.txt"
       - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/top_100.txt"

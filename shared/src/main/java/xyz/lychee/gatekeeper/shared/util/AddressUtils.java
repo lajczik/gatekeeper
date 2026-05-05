@@ -32,6 +32,29 @@ public class AddressUtils {
         return InetAddress.getByAddress(bytes);
     }
 
+    public static int addressToInteger(String address) {
+        int colonIdx = address.indexOf(':');
+        String ipPart = (colonIdx > -1 ? address.substring(0, colonIdx) : address).trim();
+        String[] parts = ipPart.split("\\.");
+        if (parts.length != 4) {
+            return 0;
+        }
+
+        int result = 0;
+        for (int i = 0; i < 4; i++) {
+            String part = parts[i];
+            if (!RandomUtil.isInteger(part)) {
+                return 0;
+            }
+
+            int octet = Integer.parseInt(parts[i]);
+            if (octet < 0 || octet > 255) {
+                return 0;
+            }
+            result |= (octet & 0xFF) << (24 - (8 * i));
+        }
+        return result;
+    }
 
     public static boolean isIpAddress(String input) {
         return input.matches("\\d+\\.\\d+\\.\\d+\\.\\d+") || input.contains(":");

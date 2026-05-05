@@ -22,7 +22,8 @@ public class ModuleManager {
                 new BlacklistModule(gatekeeper),
                 new CountryFilterModule(gatekeeper),
                 new RateLimitModule(gatekeeper),
-                new AntiVpnModule(gatekeeper)
+                new AntiVpnModule(gatekeeper),
+                new IpFilterModule(gatekeeper)
         );
         this.reload();
     }

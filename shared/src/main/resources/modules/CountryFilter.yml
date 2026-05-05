@@ -1,5 +1,5 @@
 enabled: false
-priority: 5
+priority: 6
 log: "Connection from %address%/%name% rejected: blocked country!" # Set empty "" to disable the logger
 kick:
   - "%prefix%"
