@@ -29,7 +29,7 @@ public class VelocityListeners extends ListenerHandler {
 
     @Subscribe
     public EventTask onDisconnect(DisconnectEvent e) {
-        return EventTask.async(() -> 
+        return EventTask.async(() ->
                 this.handleDisconnect(e.getPlayer().getRemoteAddress().getAddress(), e.getPlayer().getUsername())
         );
     }

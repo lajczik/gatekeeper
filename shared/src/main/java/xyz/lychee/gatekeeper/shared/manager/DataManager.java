@@ -4,10 +4,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import lombok.Getter;
-import org.jetbrains.annotations.ApiStatus;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
-import xyz.lychee.gatekeeper.shared.objects.StoredPlayer;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.net.InetAddress;
@@ -16,7 +14,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,10 +31,6 @@ public class DataManager {
     private HikariDataSource dataSource;
     private Logger logger;
     private DatabaseType currentDbType;
-
-    public enum DatabaseType {
-        H2, MYSQL
-    }
 
     public void loadDatabase(Gatekeeper<?> gatekeeper) {
         this.logger = gatekeeper.logger();
@@ -220,5 +213,9 @@ public class DataManager {
         } catch (Exception ignored) {}
 
         return this.nicknames.getOrDefault(target, (byte) 0);
+    }
+
+    public enum DatabaseType {
+        H2, MYSQL
     }
 }

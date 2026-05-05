@@ -31,7 +31,9 @@ public abstract class AbstractModule {
     }
 
     public abstract boolean handlePreLogin(InetAddress address, String name, int dataAddress);
+
     public abstract boolean handlePostLogin(InetAddress address, String name, int dataAddress);
+
     public abstract boolean handleDisconnect(InetAddress address, String name, int dataAddress);
 
     public void printCheck(InetAddress address, String name) {

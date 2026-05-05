@@ -1,8 +1,8 @@
 package xyz.lychee.gatekeeper.shared.util;
 
-import lombok.Getter;
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
+import lombok.Getter;
 
 import java.util.*;
 
@@ -171,7 +171,9 @@ public final class ConditionSet {
             }
         }
 
-        /** Przechodzi po polach obiektu NanoJSON */
+        /**
+         * Przechodzi po polach obiektu NanoJSON
+         */
         private Object find(Object root) {
             Object cur = root;
 
@@ -179,7 +181,7 @@ public final class ConditionSet {
                 if (cur == null) return null;
 
                 if (cur instanceof JsonObject) {
-                    cur = ((JsonObject)cur).get(seg);
+                    cur = ((JsonObject) cur).get(seg);
                 } else if (cur instanceof JsonArray) {
                     int idx;
                     try {
@@ -200,19 +202,25 @@ public final class ConditionSet {
 
         private boolean compareNumber(double actual) {
             switch (op) {
-                case EQ: return actual == expectedNumber;
-                case GT: return actual > expectedNumber;
-                case LT: return actual < expectedNumber;
-                case GTE: return actual >= expectedNumber;
-                case LTE: return actual <= expectedNumber;
-                default: return false;
+                case EQ:
+                    return actual == expectedNumber;
+                case GT:
+                    return actual > expectedNumber;
+                case LT:
+                    return actual < expectedNumber;
+                case GTE:
+                    return actual >= expectedNumber;
+                case LTE:
+                    return actual <= expectedNumber;
+                default:
+                    return false;
             }
         }
 
         private boolean parseBool(Object obj) {
             if (obj instanceof Boolean) return (Boolean) obj;
             if (obj instanceof String) return Boolean.parseBoolean(obj.toString());
-            if (obj instanceof Number) return ((Number)obj).intValue() != 0;
+            if (obj instanceof Number) return ((Number) obj).intValue() != 0;
             return false;
         }
     }

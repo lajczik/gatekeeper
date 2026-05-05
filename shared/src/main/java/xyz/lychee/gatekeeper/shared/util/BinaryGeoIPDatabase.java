@@ -3,7 +3,10 @@ package xyz.lychee.gatekeeper.shared.util;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.objects.GeoRange;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
