@@ -34,7 +34,7 @@ values:
     # Get a free key here: https://proxycheck.io/pricing/
     proxycheck_io:
       enabled: true
-      url: "https://proxycheck.io/v1/%address%?key={API_KEY}"
+      url: "https://proxycheck.io/v1/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       priority: 1
       condition: "proxy=yes"
 
@@ -84,7 +84,7 @@ values:
     # Get a free key here: https://vpnapi.io/signup
     vpnapi_io:
       enabled: false
-      url: "https://vpnapi.io/api/%address%?key={API_KEY}" # If you don't want to use key, you need to remove "?key={API_KEY}"
+      url: "https://vpnapi.io/api/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       priority: 6
       condition: "security:vpn=true|security:proxy=true"
 
