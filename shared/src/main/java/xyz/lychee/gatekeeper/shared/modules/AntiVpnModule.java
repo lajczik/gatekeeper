@@ -93,12 +93,12 @@ public class AntiVpnModule extends AbstractModule {
                                 boolean detected = provider.matches(JsonParser.object().from(is));
                                 this.checked.put(id, detected);
                                 return detected;
-                            } catch (IOException | JsonParserException ex) {
-                                this.getGatekeeper().logger().log(Level.WARNING, ex.getMessage(), ex);
-                            }
+                            } catch (IOException | JsonParserException ignored) {}
                         }
                         return false;
-                    }).join();
+                    })
+                    .exceptionally(t -> false)
+                    .join();
         } finally {
             if (this.semaphore != null) {
                 this.semaphore.release();
