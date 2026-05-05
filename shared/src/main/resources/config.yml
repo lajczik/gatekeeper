@@ -1,7 +1,6 @@
 prefix: "&#54DAF4ɢ&#54CCEDᴀ&#54BEE6ᴛ&#54B1DFᴇ&#54A3D8ᴋ&#5495D2ᴇ&#5487CBᴇ&#547AC4ᴘ&#546CBDᴇ&#545EB6ʀ"
 
 updater: true
-save_all_players: false # Useful for analyzing alternate accounts /gatekeeper alt (coming soon)
 
 database:
   # Database type. Available options: H2 (local), MYSQL

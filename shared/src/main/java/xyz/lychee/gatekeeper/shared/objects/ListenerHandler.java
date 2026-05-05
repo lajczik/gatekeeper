@@ -34,13 +34,6 @@ public class ListenerHandler {
                 return check.getKickMessage();
             }
         }
-
-        if (data.isSaveAllPlayers()) {
-            StoredPlayer player = new StoredPlayer(name, addressData);
-            if (!data.getPlayers().contains(player)) {
-                data.updatePlayer(player);
-            }
-        }
         return null;
     }
 }
