@@ -3,6 +3,8 @@ package xyz.lychee.gatekeeper.shared.manager;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.objects.GeoRange;
+import xyz.lychee.gatekeeper.shared.util.BinaryGeoIPBuilder;
 import xyz.lychee.gatekeeper.shared.util.BinaryGeoIPDatabase;
 
 import java.io.File;
@@ -22,23 +24,30 @@ public class GeoipManager implements Runnable {
     public static final GeoipManager INSTANCE = new GeoipManager();
     private final Map<Integer, String> countryCache = new ConcurrentHashMap<>();
     private final Map<Integer, Integer> asnCache = new ConcurrentHashMap<>();
-    private BinaryGeoIPDatabase database;
+    private final BinaryGeoIPDatabase database = new BinaryGeoIPDatabase();
     private Gatekeeper<?> gatekeeper;
-    private Set<BinaryGeoIPDatabase.GeoRange<String>> countryRangeCache = Collections.emptySet();
-    private Set<BinaryGeoIPDatabase.GeoRange<Integer>> asnRangeCache = Collections.emptySet();
+    private Set<GeoRange<String>> countryRangeCache = Collections.emptySet();
+    private Set<GeoRange<Integer>> asnRangeCache = Collections.emptySet();
 
     public void loadDatabases(Gatekeeper<?> gatekeeper) {
         this.gatekeeper = gatekeeper;
-        File dataFile = new File(gatekeeper.dataFolder(), "geodata.lgi");
+        File dataFile = new File(gatekeeper.dataFolder(), "geodata.ldb");
+
         try {
-            if (shouldDownloadDatabase(dataFile)) {
+            if (this.needUpdate(dataFile)) {
                 this.gatekeeper.logger().info("Downloading GeoIP database...");
-                downloadDatabase(dataFile);
+
+                File sourceCsv = new File(gatekeeper.dataFolder(), "temp_geodata.csv");
+                BinaryGeoIPBuilder builder = new BinaryGeoIPBuilder();
+                builder.downloadSource(sourceCsv);
+                builder.buildDatabase(sourceCsv, dataFile);
+
+                sourceCsv.delete();
             } else {
                 this.gatekeeper.logger().info("Using existing GeoIP database: " + dataFile.getName());
             }
 
-            initializeDatabase(dataFile);
+            this.database.load(dataFile);
 
             cacheAllRanges();
 
@@ -49,7 +58,7 @@ public class GeoipManager implements Runnable {
         }
     }
 
-    private boolean shouldDownloadDatabase(File dataFile) {
+    private boolean needUpdate(File dataFile) {
         if (!dataFile.exists()) {
             return true;
         }
@@ -58,39 +67,6 @@ public class GeoipManager implements Runnable {
         long updateIntervalMillis = 11 * 60 * 60 * 1000;
 
         return fileAgeInMillis > updateIntervalMillis;
-    }
-
-    private void downloadDatabase(File dataFile) throws IOException {
-        File parentDir = dataFile.getParentFile();
-        if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs();
-        }
-
-        File tempFile = new File(dataFile.getAbsolutePath() + ".tmp");
-        try (InputStream is = URI.create("https://cdn.sakuramc.pl/geodata.lgi").toURL().openStream();
-             OutputStream os = Files.newOutputStream(tempFile.toPath())) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                os.write(buffer, 0, bytesRead);
-            }
-        }
-
-        if (dataFile.exists()) {
-            dataFile.delete();
-        }
-        if (!tempFile.renameTo(dataFile)) {
-            throw new IOException("Failed to replace old database file");
-        }
-    }
-
-    private void initializeDatabase(File dataFile) throws IOException {
-        if (this.database != null) {
-            this.close();
-        }
-
-        this.database = new BinaryGeoIPDatabase(dataFile.getAbsolutePath());
-        this.database.load();
     }
 
     private void cacheAllRanges() {
@@ -113,7 +89,7 @@ public class GeoipManager implements Runnable {
             return cached;
         }
 
-        for (BinaryGeoIPDatabase.GeoRange<String> record : countryRangeCache) {
+        for (GeoRange<String> record : countryRangeCache) {
             if (record.contains(addressData)) {
                 countryCache.put(addressData, record.getValue());
                 return record.getValue();
@@ -130,7 +106,7 @@ public class GeoipManager implements Runnable {
             return cached;
         }
 
-        for (BinaryGeoIPDatabase.GeoRange<Integer> record : asnRangeCache) {
+        for (GeoRange<Integer> record : asnRangeCache) {
             if (record.contains(addressData)) {
                 asnCache.put(addressData, record.getValue());
                 return record.getValue();
@@ -144,13 +120,6 @@ public class GeoipManager implements Runnable {
     public void clearCache() {
         countryCache.clear();
         asnCache.clear();
-    }
-
-    public void close() {
-        clearCache();
-        if (this.database != null) {
-            this.database.close();
-        }
     }
 
     @Override

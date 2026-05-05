@@ -1,65 +1,42 @@
 package xyz.lychee.gatekeeper.shared.util;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import xyz.lychee.gatekeeper.shared.objects.GeoRange;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
 
 @Getter
 public class BinaryGeoIPDatabase {
     public static final int UNKNOWN_ASN = -1;
     public static final String UNKNOWN_COUNTRY = "--";
-    public static final int MAGIC_NUMBER = 0x47454F49;
-    public static final int VERSION = 1;
 
-    private final String dbFile;
     private ByteBuffer countryBuffer;
     private ByteBuffer asnBuffer;
     private int countryRecordCount;
     private int asnRecordCount;
 
-    public BinaryGeoIPDatabase(String dbFile) {
-        this.dbFile = dbFile;
-    }
-
-    public void load() throws IOException {
-        Path path = Paths.get(dbFile);
-        if (!Files.exists(path)) {
-            throw new FileNotFoundException("Database file not found: " + dbFile);
+    public void load(File databaseFile) throws IOException {
+        if (!databaseFile.exists()) {
+            throw new FileNotFoundException("Database file not found: " + databaseFile.getAbsolutePath());
         }
 
         byte[] data;
-        try (InputStream fileIn = Files.newInputStream(path);
-             GZIPInputStream gzipIn = new GZIPInputStream(fileIn);
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-
-            byte[] buffer = new byte[8192];
-            int len;
-            while ((len = gzipIn.read(buffer)) != -1) {
-                out.write(buffer, 0, len);
-            }
-            data = out.toByteArray();
+        try (FileInputStream fis = new FileInputStream(databaseFile)) {
+            data = fis.readAllBytes();
         }
 
         ByteBuffer buffer = ByteBuffer.wrap(data);
 
         int magic = buffer.getInt();
-        if (magic != MAGIC_NUMBER) {
+        if (magic != BinaryGeoIPBuilder.MAGIC_NUMBER) {
             throw new IOException("Invalid database format (wrong magic number)");
         }
 
         int version = buffer.getInt();
-        if (version != VERSION) {
+        if (version != BinaryGeoIPBuilder.VERSION) {
             throw new IOException("Unsupported database version: " + version);
         }
 
@@ -114,23 +91,5 @@ public class BinaryGeoIPDatabase {
             ranges.add(getASNRecord(i));
         }
         return ranges;
-    }
-
-    public void close() {
-        countryBuffer = null;
-        asnBuffer = null;
-    }
-
-    @Getter
-    @AllArgsConstructor
-    public static class GeoRange<T> {
-        private final int start;
-        private final int end;
-        private final T value;
-
-        public boolean contains(int ipNum) {
-            return Integer.compareUnsigned(ipNum, this.start) >= 0 &&
-                    Integer.compareUnsigned(ipNum, this.end) <= 0;
-        }
     }
 }
