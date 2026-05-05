@@ -29,22 +29,20 @@
 | **Blacklist**     | Gives you full control to permanently ban any IP or username – simple, reliable, and instantly effective.                                                                   |
 | **CountryFilter** | Instantly blocks entire countries you don’t trust – clean and ruthless traffic filtering with zero lag.                                                                     |
 | **RateLimit**     | Prevents connection floods and brute-force attacks by limiting how often clients can knock on your server’s door – smooth and stable, even under heavy fire.                |
+| **IpFilter**      | Blocks known proxy IPs gathered from popular public proxy lists – keeps your server safe from cheap bypass attempts without costing a dime on external APIs.                |
 
 ## Why choose Gatekeeper?
-
 Gatekeeper gives you the best of both worlds: **speed and precision**. Local ASN analysis delivers a verdict in
 milliseconds with almost zero CPU cost. The external API catches anything the local check misses. The result? Fewer
 false negatives, minimal resource usage, and enterprise-grade features – without a paywall.
 
 ## Quick install
-
 1. Drop `Gatekeeper.jar` into your server's `plugins` folder.
 2. Restart the server – the default config will be generated automatically.
 3. Edit module configs to add API keys, ASN lists, rate limits, and country rules.
 4. Run `/gatekeeper reload` or restart your server.
 
 ## Who is Gatekeeper for?
-
 ✅ Large public servers and networks  
 ✅ Hubs and communities prone to proxy abuse  
 ✅ Admins who want advanced blocking (ASN, country, rate limits) without tanking performance
