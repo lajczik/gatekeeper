@@ -116,21 +116,23 @@ public class AsnFilterModule extends AbstractModule implements Runnable {
                 CompletableFuture<HttpResponse<String>> responseFuture =
                         this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
 
-                return responseFuture.thenAcceptAsync(response -> {
-                    if (response.statusCode() == 200) {
-                        Set<Integer> asns = new HashSet<>();
-                        Matcher matcher = this.pattern.matcher(response.body());
-                        while (matcher.find()) {
-                            String group = matcher.group();
-                            if (RandomUtil.isInteger(group)) {
-                                asns.add(Integer.parseInt(group));
-                                lines.add(group);
-                            }
-                        }
+                return responseFuture
+                        .exceptionally(t -> null)
+                        .thenAcceptAsync(response -> {
+                            if (response != null && response.statusCode() == 200) {
+                                Set<Integer> asns = new HashSet<>();
+                                Matcher matcher = this.pattern.matcher(response.body());
+                                while (matcher.find()) {
+                                    String group = matcher.group();
+                                    if (RandomUtil.isInteger(group)) {
+                                        asns.add(Integer.parseInt(group));
+                                        lines.add(group);
+                                    }
+                                }
 
-                        this.downloadedAsn.addAll(asns);
-                    }
-                }, delayed);
+                                this.downloadedAsn.addAll(asns);
+                            }
+                        }, delayed);
             });
         }
 
