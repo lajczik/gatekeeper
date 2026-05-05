@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import lombok.Getter;
+import org.jetbrains.annotations.ApiStatus;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
 import xyz.lychee.gatekeeper.shared.objects.StoredPlayer;
@@ -26,26 +27,21 @@ import java.util.logging.Logger;
 public class DataManager {
     public static final DataManager INSTANCE = new DataManager();
 
-    private final Set<StoredPlayer> players = ConcurrentHashMap.newKeySet();
-    private final Map<Integer, Set<StoredPlayer>> playersByIp = new ConcurrentHashMap<>();
-    private final Map<String, Set<StoredPlayer>> playersByName = new ConcurrentHashMap<>();
     private final Map<Integer, Byte> addresses = new ConcurrentHashMap<>();
     private final Map<String, Byte> nicknames = new ConcurrentHashMap<>();
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private HikariDataSource dataSource;
     private Logger logger;
-    private boolean saveAllPlayers = false;
     private DatabaseType currentDbType;
 
     public enum DatabaseType {
-        H2, MYSQL, MARIADB, POSTGRESQL
+        H2, MYSQL
     }
 
     public void loadDatabase(Gatekeeper<?> gatekeeper) {
         this.logger = gatekeeper.logger();
         YamlDocument yaml = ConfigManager.INSTANCE.getYaml();
-        this.saveAllPlayers = yaml.getBoolean("save_all_players", false);
 
         String typeStr = yaml.getString("database.type", "H2").toUpperCase();
 
@@ -73,16 +69,10 @@ public class DataManager {
             String password = yaml.getString("database.password", "");
             boolean useSsl = yaml.getBoolean("database.useSSL", false);
 
-            String jdbcUrl;
-            if (this.currentDbType == DatabaseType.POSTGRESQL) {
-                jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + database + "?ssl=" + useSsl;
-            } else if (this.currentDbType == DatabaseType.MARIADB) {
-                jdbcUrl = "jdbc:mariadb://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl;
-            } else {
-                jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl;
-            }
+            String jdbcUrl = "jdbc:mariadb://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl;
 
             config.setJdbcUrl(jdbcUrl);
+            config.setDriverClassName("org.mariadb.jdbc.Driver");
             config.setUsername(username);
             config.setPassword(password);
 
@@ -101,7 +91,6 @@ public class DataManager {
 
             this.loadAddresses();
             this.loadNicknames();
-            this.loadPlayers();
 
             this.logger.info("Connected to database: " + this.currentDbType.name());
         } catch (Exception ex) {
@@ -121,7 +110,6 @@ public class DataManager {
 
     private void initTables() throws SQLException {
         String[] queries = {
-                "CREATE TABLE IF NOT EXISTS players (address INT, nickname VARCHAR(64), PRIMARY KEY (nickname, address));",
                 "CREATE TABLE IF NOT EXISTS addresses (address INT, access TINYINT DEFAULT 0, PRIMARY KEY (address));",
                 "CREATE TABLE IF NOT EXISTS nicknames (nickname VARCHAR(64), access TINYINT DEFAULT 0, PRIMARY KEY (nickname));"
         };
@@ -163,26 +151,6 @@ public class DataManager {
         }
     }
 
-    public void loadPlayers() {
-        String query = "SELECT address, nickname FROM players";
-        try (Connection conn = this.dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                this.loadUser(new StoredPlayer(rs.getString("nickname"), rs.getInt("address")));
-            }
-        } catch (SQLException ex) {
-            this.logger.log(Level.SEVERE, "Failed to load players database", ex);
-        }
-    }
-
-    public void loadUser(StoredPlayer sp) {
-        this.players.add(sp);
-        this.playersByIp.computeIfAbsent(sp.getAddress(), k -> ConcurrentHashMap.newKeySet()).add(sp);
-        this.playersByName.computeIfAbsent(sp.getName(), k -> ConcurrentHashMap.newKeySet()).add(sp);
-    }
-
     public boolean hasAccess(int address, EnumAccess access) {
         return this.addresses.getOrDefault(address, (byte) 0) == access.getType();
     }
@@ -202,32 +170,13 @@ public class DataManager {
     }
 
     private String getUpsertQuery(String table, String keyColumn, String valColumn) {
-        if (currentDbType == DatabaseType.H2 || currentDbType == DatabaseType.MYSQL || currentDbType == DatabaseType.MARIADB) {
+        if (currentDbType == DatabaseType.H2 || currentDbType == DatabaseType.MYSQL) {
             return String.format("INSERT INTO %s (%s, %s) VALUES (?, ?) ON DUPLICATE KEY UPDATE %s = VALUES(%s)",
                     table, keyColumn, valColumn, valColumn, valColumn);
         } else {
             return String.format("INSERT INTO %s (%s, %s) VALUES (?, ?) ON CONFLICT(%s) DO UPDATE SET %s = excluded.%s",
                     table, keyColumn, valColumn, keyColumn, valColumn, valColumn);
         }
-    }
-
-    public void updatePlayer(StoredPlayer sp) {
-        this.executor.execute(() -> {
-            String sql = (currentDbType == DatabaseType.POSTGRESQL)
-                    ? "INSERT INTO players (address, nickname) VALUES (?, ?) ON CONFLICT DO NOTHING"
-                    : "INSERT IGNORE INTO players (address, nickname) VALUES (?, ?)";
-
-            try (Connection conn = this.dataSource.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-                pstmt.setInt(1, sp.getAddress());
-                pstmt.setString(2, sp.getName());
-                pstmt.executeUpdate();
-
-            } catch (SQLException ex) {
-                this.logger.log(Level.SEVERE, "Błąd aktualizacji gracza", ex);
-            }
-        });
     }
 
     public void updateAccess(int ip, EnumAccess access) {

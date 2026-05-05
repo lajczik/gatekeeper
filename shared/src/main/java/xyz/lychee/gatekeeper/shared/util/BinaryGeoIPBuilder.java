@@ -1,8 +1,5 @@
 package xyz.lychee.gatekeeper.shared.util;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import xyz.lychee.gatekeeper.shared.objects.GeoRange;
 
 import java.io.*;
@@ -62,13 +59,17 @@ public class BinaryGeoIPBuilder {
         List<GeoRange<String>> countryRanges = new ArrayList<>(600000);
         List<GeoRange<Integer>> asnRanges = new ArrayList<>(600000);
 
-        try (Reader reader = new InputStreamReader(new FileInputStream(sourceCsv), StandardCharsets.UTF_8);
-             CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
+        // network,asn,country_code,name,org,domain
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sourceCsv), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) continue;
 
-            for (CSVRecord rec : parser) {
-                String network = rec.get("network");
+                String[] rec = line.split(",");
+                if (rec.length < 3) continue;
 
-                if (!network.contains(".")) continue;
+                String network = rec[0];
+                if (network == null || !network.contains(".")) continue;
 
                 long[] ipRange = parseNetwork(network);
                 if (ipRange == null) continue;
@@ -76,14 +77,14 @@ public class BinaryGeoIPBuilder {
                 int start = (int) ipRange[0];
                 int end = (int) ipRange[1];
 
-                String asnStr = rec.get("asn");
-                if (RandomUtil.isInteger(asnStr)) {
-                    asnRanges.add(new GeoRange<>(start, end, Integer.parseInt(asnStr)));
+                String asn = rec[1];
+                if (RandomUtil.isInteger(asn)) {
+                    asnRanges.add(new GeoRange<>(start, end, Integer.parseInt(asn)));
                 }
 
-                String countryCode = rec.get("country_code");
-                if (countryCode != null && countryCode.length() >= 2) {
-                    countryRanges.add(new GeoRange<>(start, end, countryCode.substring(0, 2)));
+                String country_code = rec[2];
+                if (country_code != null && country_code.length() >= 2) {
+                    countryRanges.add(new GeoRange<>(start, end, country_code.substring(0, 2)));
                 }
             }
         }

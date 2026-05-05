@@ -7,11 +7,11 @@ group = "xyz.lychee.gatekeeper"
 version = "1.1"
 
 dependencies {
-    implementation(project(":shared"))
-    implementation(project(":velocity"))
-    implementation(project(":bungee"))
-    implementation(project(":bukkit"))
-    implementation(project(":paper"))
+    implementation(project(":shared", "shadow"))
+    implementation(project(":velocity", "shadow"))
+    implementation(project(":bungee", "shadow"))
+    implementation(project(":bukkit", "shadow"))
+    implementation(project(":paper", "shadow"))
 }
 
 tasks {

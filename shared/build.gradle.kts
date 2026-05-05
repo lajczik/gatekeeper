@@ -5,14 +5,17 @@ plugins {
 
 dependencies {
     implementation("com.grack:nanojson:1.10")
-    implementation("org.apache.commons:commons-csv:1.14.1")
     implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("com.h2database:h2:2.4.240")
-    implementation("com.mysql:mysql-connector-j:9.6.0")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.8")
 }
 
 tasks {
     shadowJar {
-        minimize()
+        minimize {
+            exclude(dependency("com.zaxxer:HikariCP"))
+            exclude(dependency("com.h2database:h2"))
+            exclude(dependency("org.mariadb.jdbc:mariadb-java-client"))
+        }
     }
 }
