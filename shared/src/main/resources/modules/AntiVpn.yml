@@ -49,12 +49,31 @@ values:
 
     # https://ip-api.com/
     #
-    # No Key: unlimited queries.
+    # No Key: unlimited queries. (45 req/min)
     ip-api_com:
       enabled: true
-      url: "https://api.ipapi.is/?q=%address%"
+      url: "http://ip-api.com/json/%address%?fields=proxy,hosting"
       priority: 3
+      condition: "hosting=true|proxy=true"
+
+    # https://ipapi.is/
+    #
+    # Free Key 1,000 daily queries.
+    # Paid Key: 20k-2m daily queries.
+    ipapi_is:
+      enabled: true
+      url: "https://api.ipapi.is/?q=%address%"
+      priority: 4
       condition: "is_vpn=true|is_proxy=true"
+
+    # https://ipapi.is/
+    #
+    # No Key: unlimited queries.
+    zombiebot_pl:
+      enabled: true
+      url: "https://antivpn.zombiebot.pl/check/%address%"
+      priority: 5
+      condition: "vpn=true"
 
     # https://vpnapi.io/
     #
@@ -66,7 +85,7 @@ values:
     vpnapi_io:
       enabled: false
       url: "https://vpnapi.io/api/%address%?key={API_KEY}" # If you don't want to use key, you need to remove "?key={API_KEY}"
-      priority: 4
+      priority: 6
       condition: "security:vpn=true|security:proxy=true"
 
     # https://iphub.info/
@@ -80,7 +99,7 @@ values:
       url: "https://v2.api.iphub.info/ip/%address%"
       headers:
         - "X-Key:{API_KEY}"
-      priority: 5
+      priority: 7
       condition: "block=1"
 
     # https://www.ipqualityscore.com/
@@ -92,5 +111,5 @@ values:
     ipqualityscore_com:
       enabled: false
       url: "https://ipqualityscore.com/api/json/ip/{API_KEY}/%address%?strictness=0&allow_public_access_points=false"
-      priority: 6
+      priority: 8
       condition: "fraud_score>75"
