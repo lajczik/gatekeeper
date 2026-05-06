@@ -2,6 +2,7 @@ package xyz.lychee.gatekeeper.shared.modules;
 
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
@@ -23,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class AntiVpnModule extends AbstractModule {
     private final Map<Integer, Boolean> checked = new ConcurrentHashMap<>();
@@ -153,20 +155,27 @@ public class AntiVpnModule extends AbstractModule {
 
         this.whitelist.addAll(this.getConfig().getStringList("whitelist"));
 
-        this.getConfig().getSection("checks")
-                .getKeys()
-                .stream()
-                .map(key -> this.getConfig().getSection("checks." + key))
-                .filter(section -> section.getBoolean("enabled", false))
-                .forEach(section -> {
-                    String condStr = section.getString("condition", null);
-                    String url = section.getString("url", "");
-                    int priority = section.getInt("priority", 0);
-                    List<String> headers = section.getStringList("headers", Collections.emptyList());
+        for (Object key : this.getConfig().getSection("checks").getKeys()) {
+            Section section = this.getConfig().getSection("checks." + key);
+            if (section.getBoolean("enabled", false)) {
+                String condStr = section.getString("condition", null);
+                String url = section.getString("url", "");
+                int priority = section.getInt("priority", 0);
 
-                    ConditionSet cs = condStr != null ? ConditionSet.compile(condStr) : null;
-                    this.providers.add(new ConditionSet.Provider(url, priority, headers, cs));
-                });
+                Map<String, String> headers = section.getStringList("headers", Collections.emptyList()).stream()
+                        .map(h -> h.split(":", 2))
+                        .filter(parts -> parts.length == 2)
+                        .collect(Collectors.toMap(
+                                parts -> parts[0].trim(),
+                                parts -> parts[1].trim(),
+                                (existing, replacement) -> replacement
+                        ));
+
+                ConditionSet cs = condStr != null ? ConditionSet.compile(condStr) : null;
+                this.providers.add(new ConditionSet.Provider(Objects.toString(key), url, priority, headers, cs));
+            }
+        }
+
         this.providers.sort(Comparator.comparingInt(ConditionSet.Provider::getPriority));
         this.roundRobinIndex.set(RandomUtil.RANDOM.nextInt(this.providers.size()));
 

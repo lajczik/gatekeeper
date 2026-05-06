@@ -4,12 +4,16 @@ import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import lombok.Getter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class ConditionSet {
-    private final List<List<Term>> orClauses;
+    private final Term[][] orClauses;
 
-    private ConditionSet(List<List<Term>> orClauses) {
+    private ConditionSet(Term[][] orClauses) {
         this.orClauses = orClauses;
     }
 
@@ -17,89 +21,84 @@ public final class ConditionSet {
         if (expr == null || expr.trim().isEmpty()) return null;
 
         String[] orParts = expr.split("\\|");
-        List<List<Term>> orClauses = new ArrayList<>(orParts.length);
+        List<Term[]> compiledOrs = new ArrayList<>(orParts.length);
 
         for (String orPart : orParts) {
-            String trimmedOr = orPart.trim();
-            if (trimmedOr.isEmpty()) continue;
+            if (orPart.trim().isEmpty()) continue;
 
-            String[] andParts = trimmedOr.split("&");
-            List<Term> andList = new ArrayList<>(andParts.length);
+            String[] andParts = orPart.split("&");
+            List<Term> compiledAnds = new ArrayList<>(andParts.length);
 
             for (String andPart : andParts) {
-                String e = andPart.trim();
-                if (e.isEmpty()) continue;
-                Term t = parseTerm(e);
-                if (t != null) andList.add(t);
+                if (andPart.trim().isEmpty()) continue;
+                Term t = parseTerm(andPart.trim());
+                if (t != null) compiledAnds.add(t);
             }
-            if (!andList.isEmpty()) orClauses.add(andList);
+
+            if (!compiledAnds.isEmpty()) {
+                compiledOrs.add(compiledAnds.toArray(new Term[0]));
+            }
         }
-        return new ConditionSet(orClauses);
+
+        if (compiledOrs.isEmpty()) return null;
+        return new ConditionSet(compiledOrs.toArray(new Term[0][]));
     }
 
-    private static Term parseTerm(String expression) {
-        int pos;
-        String opStr;
-        if ((pos = expression.indexOf(">=")) >= 0) opStr = ">=";
-        else if ((pos = expression.indexOf("<=")) >= 0) opStr = "<=";
-        else if ((pos = expression.indexOf(">")) >= 0) opStr = ">";
-        else if ((pos = expression.indexOf("<")) >= 0) opStr = "<";
-        else if ((pos = expression.indexOf("=")) >= 0) opStr = "=";
-        else return null;
+    private static final Pattern TERM_PATTERN = Pattern.compile("^(.+?)(>=|<=|>|<|=)(.+)$");
 
-        String path = expression.substring(0, pos).trim();
-        String valuePart = expression.substring(pos + opStr.length()).trim();
+    private static Term parseTerm(String expression) {
+        Matcher m = TERM_PATTERN.matcher(expression);
+        if (!m.matches()) return null;
+
+        String path = m.group(1).trim();
+        String opStr = m.group(2);
+        String valuePart = m.group(3).trim();
+
         if (path.isEmpty() || valuePart.isEmpty()) return null;
 
-        String[] segments = splitPath(path);
+        Object[] segments = compilePath(path);
 
-        if (">=".equals(opStr) || ">".equals(opStr) || "<=".equals(opStr) || "<".equals(opStr)) {
+        if ("=".equals(opStr)) {
+            return new Term(segments, null, 0, valuePart);
+        } else {
             try {
                 double d = Double.parseDouble(valuePart);
                 Op op;
                 switch (opStr) {
-                    case ">=":
-                        op = Op.GTE;
-                        break;
-                    case "<=":
-                        op = Op.LTE;
-                        break;
-                    case ">":
-                        op = Op.GT;
-                        break;
-                    default:
-                        op = Op.LT;
-                        break;
+                    case ">=": op = Op.GREATER_THAN_EQUAL; break;
+                    case "<=": op = Op.LESS_THAN_EQUAL; break;
+                    case ">":  op = Op.GREATER_THAN; break;
+                    default:   op = Op.LESS_THAN; break;
                 }
-                return new Term(segments, op, d);
+                return new Term(segments, op, d, null);
             } catch (NumberFormatException ex) {
                 return null;
             }
-        } else {
-            String low = valuePart.toLowerCase(Locale.ROOT);
-            if ("true".equals(low) || "false".equals(low)) {
-                boolean b = Boolean.parseBoolean(low);
-                return new Term(segments, Op.EQ, b);
-            }
-            try {
-                double d = Double.parseDouble(valuePart);
-                return new Term(segments, Op.EQ, d);
-            } catch (NumberFormatException ignored) {}
-            return new Term(segments, Op.EQ, valuePart);
         }
     }
 
-    private static String[] splitPath(String path) {
+    private static Object[] compilePath(String path) {
         String[] raw = path.split(":");
-        for (int i = 0; i < raw.length; i++) raw[i] = raw[i].trim();
-        return raw;
+        Object[] segments = new Object[raw.length];
+
+        for (int i = 0; i < raw.length; i++) {
+            String seg = raw[i].trim();
+            if (seg.matches("\\d+")) {
+                segments[i] = Integer.parseInt(seg);
+            } else {
+                segments[i] = seg;
+            }
+        }
+        return segments;
     }
 
-    public boolean evaluate(JsonObject node) {
-        for (List<Term> andBlock : orClauses) {
+    public boolean evaluate(Object json) {
+        if (json == null) return false;
+
+        for (Term[] andBlock : orClauses) {
             boolean allMatch = true;
             for (Term t : andBlock) {
-                if (!t.matches(node)) {
+                if (!t.matches(json)) {
                     allMatch = false;
                     break;
                 }
@@ -109,143 +108,83 @@ public final class ConditionSet {
         return false;
     }
 
-    public enum Op {EQ, GT, LT, GTE, LTE}
-
-    private enum ValueType {NUMBER, BOOLEAN, TEXT}
+    public enum Op {
+        GREATER_THAN, LESS_THAN, GREATER_THAN_EQUAL, LESS_THAN_EQUAL
+    }
 
     private static final class Term {
-        final String[] pathSegments;
-        final Op op;
-        final ValueType valueType;
-        final double expectedNumber;
-        final boolean expectedBool;
-        final String expectedText;
+        private final Object[] pathSegments;
+        private final Op op;
+        private final double expectedNumber;
+        private final String expectedText;
 
-        Term(String[] pathSegments, Op op, double expectedNumber) {
+        public Term(Object[] pathSegments, Op op, double expectedNumber, String expectedText) {
             this.pathSegments = pathSegments;
             this.op = op;
-            this.valueType = ValueType.NUMBER;
             this.expectedNumber = expectedNumber;
-            this.expectedBool = false;
-            this.expectedText = null;
-        }
-
-        Term(String[] pathSegments, Op op, boolean expectedBool) {
-            this.pathSegments = pathSegments;
-            this.op = op;
-            this.valueType = ValueType.BOOLEAN;
-            this.expectedNumber = 0;
-            this.expectedBool = expectedBool;
-            this.expectedText = null;
-        }
-
-        Term(String[] pathSegments, Op op, String expectedText) {
-            this.pathSegments = pathSegments;
-            this.op = op;
-            this.valueType = ValueType.TEXT;
-            this.expectedNumber = 0;
-            this.expectedBool = false;
             this.expectedText = expectedText;
         }
 
-        boolean matches(JsonObject root) {
+        boolean matches(Object root) {
             Object cur = find(root);
             if (cur == null) return false;
 
-            switch (valueType) {
-                case NUMBER:
-                    if (!(cur instanceof Number)) return false;
-                    double actual = ((Number) cur).doubleValue();
-                    return compareNumber(actual);
-
-                case BOOLEAN:
-                    boolean actualBool = parseBool(cur);
-                    return op == Op.EQ && actualBool == expectedBool;
-
-                case TEXT:
-                    String actualText = String.valueOf(cur);
-                    return op == Op.EQ && actualText.equalsIgnoreCase(expectedText);
-
-                default:
-                    return false;
+            if (op == null) {
+                return String.valueOf(cur).equalsIgnoreCase(expectedText);
+            } else {
+                if (cur instanceof Number) {
+                    return compareNumber(((Number) cur).doubleValue());
+                }
+                return false;
             }
         }
 
-        /**
-         * Przechodzi po polach obiektu NanoJSON
-         */
         private Object find(Object root) {
             Object cur = root;
 
-            for (String seg : pathSegments) {
+            for (Object seg : pathSegments) {
                 if (cur == null) return null;
 
-                if (cur instanceof JsonObject) {
-                    cur = ((JsonObject) cur).get(seg);
-                } else if (cur instanceof JsonArray) {
-                    int idx;
-                    try {
-                        idx = Integer.parseInt(seg);
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-                    JsonArray arr = (JsonArray) cur;
-                    if (idx < 0 || idx >= arr.size()) return null;
-                    cur = arr.get(idx);
+                if (cur instanceof JsonObject && seg instanceof String) {
+                    cur = ((JsonObject) cur).get((String) seg);
+                } else if (cur instanceof JsonArray && seg instanceof Integer) {
+                    cur = ((JsonArray) cur).get((Integer) seg);
                 } else {
                     return null;
                 }
             }
-
             return cur;
         }
 
         private boolean compareNumber(double actual) {
             switch (op) {
-                case EQ:
-                    return actual == expectedNumber;
-                case GT:
-                    return actual > expectedNumber;
-                case LT:
-                    return actual < expectedNumber;
-                case GTE:
-                    return actual >= expectedNumber;
-                case LTE:
-                    return actual <= expectedNumber;
-                default:
-                    return false;
+                case GREATER_THAN: return actual > expectedNumber;
+                case LESS_THAN: return actual < expectedNumber;
+                case GREATER_THAN_EQUAL: return actual >= expectedNumber;
+                case LESS_THAN_EQUAL: return actual <= expectedNumber;
+                default: return false;
             }
-        }
-
-        private boolean parseBool(Object obj) {
-            if (obj instanceof Boolean) return (Boolean) obj;
-            if (obj instanceof String) return Boolean.parseBoolean(obj.toString());
-            if (obj instanceof Number) return ((Number) obj).intValue() != 0;
-            return false;
         }
     }
 
     @Getter
     public static final class Provider {
+        private final String name;
         private final String url;
-        private final Map<String, String> headers = new HashMap<>();
         private final int priority;
+        private final Map<String, String> headers;
         private final ConditionSet condition;
 
-        public Provider(String url, int priority, List<String> headers, ConditionSet condition) {
+        public Provider(String name, String url, int priority, Map<String, String> headers, ConditionSet condition) {
+            this.name = name;
             this.url = url;
             this.priority = priority;
+            this.headers = headers;
             this.condition = condition;
-            for (String header : headers) {
-                String[] parts = header.split(":");
-                if (parts.length != 2) continue;
-                this.headers.put(parts[0].trim(), parts[1].trim());
-            }
         }
 
-        public boolean matches(JsonObject json) {
-            if (condition == null) return true;
-            return condition.evaluate(json);
+        public boolean matches(Object json) {
+            return condition == null || condition.evaluate(json);
         }
     }
 }
