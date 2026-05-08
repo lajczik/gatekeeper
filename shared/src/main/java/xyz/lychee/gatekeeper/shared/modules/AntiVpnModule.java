@@ -4,14 +4,13 @@ import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.ConditionSet;
 import xyz.lychee.gatekeeper.shared.util.RandomUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -43,25 +42,19 @@ public class AntiVpnModule extends AbstractModule {
     }
 
     @Override
-    public boolean handlePreLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePreLogin(GeoConnection connection) {
         if (this.providers.isEmpty()) {
             return false;
         }
 
-        int id;
-        if (this.blacklist_asn) {
-            int asn = GeoipManager.INSTANCE.getAsnCode(dataAddress);
-            id = asn > 0 ? asn : dataAddress;
-        } else {
-            id = dataAddress;
-        }
+        int id = this.blacklist_asn && connection.getAsn() > 0 ? connection.getAsn() : connection.getAddressData();
 
         Boolean cached = this.checked.get(id);
         if (cached != null) {
             return cached;
         }
 
-        String ip = address.getHostAddress();
+        String ip = connection.getAddress().getHostAddress();
         if (this.whitelist.contains(ip)) {
             this.checked.put(id, Boolean.FALSE);
             return false;
@@ -123,12 +116,12 @@ public class AntiVpnModule extends AbstractModule {
     }
 
     @Override
-    public boolean handlePostLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePostLogin(GeoConnection connection) {
         return false;
     }
 
     @Override
-    public boolean handleDisconnect(InetAddress address, String name, int dataAddress) {
+    public boolean handleDisconnect(GeoConnection connection) {
         return false;
     }
 
@@ -160,7 +153,6 @@ public class AntiVpnModule extends AbstractModule {
             if (section.getBoolean("enabled", false)) {
                 String condStr = section.getString("condition", null);
                 String url = section.getString("url", "");
-                int priority = section.getInt("priority", 0);
 
                 Map<String, String> headers = section.getStringList("headers", Collections.emptyList()).stream()
                         .map(h -> h.split(":", 2))
@@ -172,12 +164,10 @@ public class AntiVpnModule extends AbstractModule {
                         ));
 
                 ConditionSet cs = condStr != null ? ConditionSet.compile(condStr) : null;
-                this.providers.add(new ConditionSet.Provider(Objects.toString(key), url, priority, headers, cs));
+                this.providers.add(new ConditionSet.Provider(Objects.toString(key), url, headers, cs));
             }
         }
-
-        this.providers.sort(Comparator.comparingInt(ConditionSet.Provider::getPriority));
-        this.roundRobinIndex.set(RandomUtil.RANDOM.nextInt(this.providers.size()));
+        Collections.shuffle(this.providers, RandomUtil.RANDOM);
 
         return true;
     }

@@ -2,13 +2,13 @@ package xyz.lychee.gatekeeper.shared.modules;
 
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
-
-import java.net.InetAddress;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 public class AccountLimitModule extends AbstractModule {
-    private final ConcurrentHashMap<Integer, AtomicInteger> ip_connected = new ConcurrentHashMap<>();
+    private final Map<Integer, LongAdder> ip_connected = new ConcurrentHashMap<>();
     private int accountLimitPerIp;
 
     public AccountLimitModule(Gatekeeper<?> gatekeeper) {
@@ -16,25 +16,25 @@ public class AccountLimitModule extends AbstractModule {
     }
 
     @Override
-    public boolean handlePreLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePreLogin(GeoConnection connection) {
         if (this.accountLimitPerIp > 0) {
-            AtomicInteger val = this.ip_connected.get(dataAddress);
-            return val != null && val.get() >= this.accountLimitPerIp;
+            LongAdder val = this.ip_connected.get(connection.getAddressData());
+            return val != null && val.longValue() >= this.accountLimitPerIp;
         }
         return false;
     }
 
     @Override
-    public boolean handlePostLogin(InetAddress address, String name, int dataAddress) {
-        this.ip_connected.computeIfAbsent(dataAddress, k -> new AtomicInteger()).incrementAndGet();
+    public boolean handlePostLogin(GeoConnection connection) {
+        this.ip_connected.computeIfAbsent(connection.getAddressData(), k -> new LongAdder()).increment();
         return false;
     }
 
     @Override
-    public boolean handleDisconnect(InetAddress address, String name, int dataAddress) {
-        this.ip_connected.computeIfPresent(dataAddress, (k, ai) -> {
-            if (ai.decrementAndGet() <= 0) return null;
-            return ai;
+    public boolean handleDisconnect(GeoConnection connection) {
+        this.ip_connected.computeIfPresent(connection.getAddressData(), (k, la) -> {
+            la.decrement();
+            return la.longValue() > 0 ? la : null;
         });
         return false;
     }

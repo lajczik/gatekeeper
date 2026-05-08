@@ -3,8 +3,7 @@ package xyz.lychee.gatekeeper.shared.modules;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
-
-import java.net.InetAddress;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import java.util.concurrent.*;
 
 @Getter
@@ -21,26 +20,26 @@ public class RateLimitModule extends AbstractModule implements Runnable {
     }
 
     @Override
-    public boolean handlePreLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePreLogin(GeoConnection connection) {
         long now = System.currentTimeMillis();
         if (this.server_connect + this.server_limit > now) {
             return true;
         }
 
-        Long l = this.ip_connect.get(dataAddress);
+        Long l = this.ip_connect.get(connection.getAddressData());
         return l != null && l + this.ip_limit > now;
     }
 
     @Override
-    public boolean handlePostLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePostLogin(GeoConnection connection) {
         long now = System.currentTimeMillis();
         this.server_connect = now;
-        this.ip_connect.put(dataAddress, now);
+        this.ip_connect.put(connection.getAddressData(), now);
         return false;
     }
 
     @Override
-    public boolean handleDisconnect(InetAddress address, String name, int dataAddress) {
+    public boolean handleDisconnect(GeoConnection connection) {
         return false;
     }
 

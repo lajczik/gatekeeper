@@ -3,6 +3,7 @@ package xyz.lychee.gatekeeper.shared.modules;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 
 import java.net.InetAddress;
 import java.util.HashSet;
@@ -16,17 +17,17 @@ public class CountryFilterModule extends AbstractModule {
     }
 
     @Override
-    public boolean handlePreLogin(InetAddress address, String name, int dataAddress) {
-        return this.listMode == this.list.contains(GeoipManager.INSTANCE.getCountryCode(dataAddress));
+    public boolean handlePreLogin(GeoConnection connection) {
+        return this.list.contains(connection.getCountry()) == this.listMode;
     }
 
     @Override
-    public boolean handlePostLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePostLogin(GeoConnection connection) {
         return false;
     }
 
     @Override
-    public boolean handleDisconnect(InetAddress address, String name, int dataAddress) {
+    public boolean handleDisconnect(GeoConnection connection) {
         return false;
     }
 

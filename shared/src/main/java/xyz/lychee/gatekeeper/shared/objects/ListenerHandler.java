@@ -5,32 +5,39 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ListenerHandler {
+    private final Map<Integer, GeoConnection> connections = new ConcurrentHashMap<>();
+
     public void handleDisconnect(InetAddress address, String name) {
         int addressData = AddressUtils.addressToInteger(address);
+        GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         for (AbstractModule ac : ModuleManager.INSTANCE.getLoadedChecks()) {
-            ac.handleDisconnect(address, name, addressData);
+            ac.handleDisconnect(connection);
         }
     }
 
     public void handlePostLogin(InetAddress address, String name) {
         int addressData = AddressUtils.addressToInteger(address);
+        GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         for (AbstractModule ac : ModuleManager.INSTANCE.getLoadedChecks()) {
-            ac.handlePostLogin(address, name, addressData);
+            ac.handlePostLogin(connection);
         }
     }
 
     public Object handlePreLogin(InetAddress address, String name) {
         int addressData = AddressUtils.addressToInteger(address);
-        DataManager data = DataManager.INSTANCE;
-        if (data.hasAccess(addressData, EnumAccess.WHITELIST) || data.hasAccess(name, EnumAccess.WHITELIST)) {
+        GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
+        if (DataManager.INSTANCE.hasAccess(connection, EnumAccess.WHITELIST)) {
             return null;
         }
 
         for (AbstractModule check : ModuleManager.INSTANCE.getLoadedChecks()) {
-            if (check.handlePreLogin(address, name, addressData)) {
-                check.printCheck(address, name);
+            if (check.handlePreLogin(connection)) {
+                check.printCheck(connection);
                 return check.getKickMessage();
             }
         }

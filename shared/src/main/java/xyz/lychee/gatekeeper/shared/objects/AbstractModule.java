@@ -30,18 +30,20 @@ public abstract class AbstractModule {
         this.name = name;
     }
 
-    public abstract boolean handlePreLogin(InetAddress address, String name, int dataAddress);
+    public abstract boolean handlePreLogin(GeoConnection connection);
 
-    public abstract boolean handlePostLogin(InetAddress address, String name, int dataAddress);
+    public abstract boolean handlePostLogin(GeoConnection connection);
 
-    public abstract boolean handleDisconnect(InetAddress address, String name, int dataAddress);
+    public abstract boolean handleDisconnect(GeoConnection connection);
 
-    public void printCheck(InetAddress address, String name) {
+    public void printCheck(GeoConnection connection) {
         if (this.logMessage != null) {
             this.gatekeeper.logger().info(
                     this.logMessage
-                            .replace("%name%", name)
-                            .replace("%address%", address.getHostAddress())
+                            .replace("%name%", connection.getName())
+                            .replace("%address%", connection.getAddress().getHostAddress())
+                            .replace("%country%", connection.getCountry())
+                            .replace("%asn%", Integer.toString(connection.getAsn()))
             );
         }
     }

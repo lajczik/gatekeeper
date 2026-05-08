@@ -4,6 +4,7 @@ import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.DataManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 
 import java.net.InetAddress;
 
@@ -13,19 +14,17 @@ public class BlacklistModule extends AbstractModule {
     }
 
     @Override
-    public boolean handlePreLogin(InetAddress address, String name, int dataAddress) {
-        DataManager dataManager = DataManager.INSTANCE;
-        return dataManager.hasAccess(dataAddress, EnumAccess.BLACKLIST)
-                || dataManager.hasAccess(name, EnumAccess.BLACKLIST);
+    public boolean handlePreLogin(GeoConnection connection) {
+        return DataManager.INSTANCE.hasAccess(connection, EnumAccess.BLACKLIST);
     }
 
     @Override
-    public boolean handlePostLogin(InetAddress address, String name, int dataAddress) {
+    public boolean handlePostLogin(GeoConnection connection) {
         return false;
     }
 
     @Override
-    public boolean handleDisconnect(InetAddress address, String name, int dataAddress) {
+    public boolean handleDisconnect(GeoConnection connection) {
         return false;
     }
 

@@ -6,6 +6,7 @@ import dev.dejvokep.boostedyaml.YamlDocument;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.net.InetAddress;
@@ -144,12 +145,9 @@ public class DataManager {
         }
     }
 
-    public boolean hasAccess(int address, EnumAccess access) {
-        return this.addresses.getOrDefault(address, (byte) 0) == access.getType();
-    }
-
-    public boolean hasAccess(String nickname, EnumAccess access) {
-        return this.nicknames.getOrDefault(nickname, (byte) 0) == access.getType();
+    public boolean hasAccess(GeoConnection connection, EnumAccess access) {
+        return this.addresses.getOrDefault(connection.getAddressData(), (byte) 0) == access.getType()
+                || this.nicknames.getOrDefault(connection.getName(), (byte) 0) == access.getType();
     }
 
     public void setAccess(int address, EnumAccess access) {
