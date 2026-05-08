@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "xyz.lychee.gatekeeper"
-version = "1.2"
+version = "1.3"
 
 dependencies {
     implementation(project(":shared", "shadow"))
@@ -20,7 +20,6 @@ tasks {
         archiveClassifier.set("")
         destinationDirectory.set(file("C:/Users/lajczi/Desktop/testowy/plugins"))
 
-        relocate("org.bstats", "xyz.lychee.gatekeeper.libs.metrics")
         relocate("dev.dejvokep.boostedyaml", "xyz.lychee.gatekeeper.libs.yaml")
     }
 }
@@ -40,6 +39,7 @@ allprojects {
     }
 
     dependencies {
+        implementation("com.grack:nanojson:1.10")
         implementation("dev.dejvokep:boosted-yaml:1.3.7")
 
         compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
