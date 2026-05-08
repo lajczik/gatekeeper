@@ -26,7 +26,7 @@ public class UpdaterManager implements Runnable {
     private boolean updater;
     private Gatekeeper<?> plugin;
 
-    public void load(Gatekeeper<?> plugin) {
+    public void loadUpdater(Gatekeeper<?> plugin) {
         this.updater = ConfigManager.INSTANCE.getYaml().getBoolean("updater");
         this.currentVersion = plugin.version().trim();
         this.plugin = plugin;

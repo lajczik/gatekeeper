@@ -8,6 +8,10 @@ messages:
     - ' &8» &f/gatekeeper info (address/name) &8- &7Shows information about an address or name.'
     - ' &8» &f/gatekeeper reload &8- &7Reloads lang and config files'
 
+  updater:
+    - '%prefix% &8• &7Plugin needs update, latest version {}'
+    - ' &8» &#5495D2https://modrinth.com/plugin/gatekeeper-mc/version/{}'
+
   info:
     usage:
       - '%prefix% &8• &7Correct usage:'

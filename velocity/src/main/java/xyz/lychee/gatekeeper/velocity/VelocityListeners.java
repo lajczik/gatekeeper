@@ -6,14 +6,34 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import net.kyori.adventure.text.Component;
+import xyz.lychee.gatekeeper.shared.manager.UpdaterManager;
 import xyz.lychee.gatekeeper.shared.objects.ListenerHandler;
 
+import java.util.concurrent.TimeUnit;
+
 public class VelocityListeners extends ListenerHandler {
+    private final VelocityMain plugin;
+
+    public VelocityListeners(VelocityMain plugin) {
+        this.plugin = plugin;
+    }
+
     @Subscribe
     public EventTask onPostLogin(PostLoginEvent e) {
-        return EventTask.async(() ->
-                this.handlePostLogin(e.getPlayer().getRemoteAddress().getAddress(), e.getPlayer().getUsername())
-        );
+        return EventTask.async(() -> {
+            this.handlePostLogin(e.getPlayer().getRemoteAddress().getAddress(), e.getPlayer().getUsername());
+
+            UpdaterManager updater = UpdaterManager.INSTANCE;
+            if (e.getPlayer().hasPermission("gatekeeper.updater") && updater.getCompared() < 0 && updater.isUpdater()) {
+                this.plugin.getProxy().getScheduler().buildTask(this.plugin, () ->
+                                e.getPlayer().sendMessage(
+                                        this.plugin.language().message("messages.updater", updater.getLatestVersion(), updater.getLatestVersion())
+                                )
+                        )
+                        .delay(3, TimeUnit.SECONDS)
+                        .schedule();
+            }
+        });
     }
 
     @Subscribe(priority = 999)
