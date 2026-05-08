@@ -1,11 +1,9 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 
-import java.net.InetAddress;
 import java.util.HashSet;
 
 public class CountryFilterModule extends AbstractModule {

@@ -6,7 +6,6 @@ import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -82,7 +81,7 @@ public class IpFilterModule extends AbstractModule implements Runnable {
         this.task = this.executor.scheduleAtFixedRate(this, 10L, this.interval, TimeUnit.SECONDS);
 
         for (String address : this.getConfig().getStringList("list")) {
-            this.listedIps.add(AddressUtils.addressToInteger(address));
+            this.listedIps.add(AddressUtils.ipv4ToInt(address));
         }
         this.list_mode = this.getConfig().getBoolean("list_mode");
 
@@ -122,7 +121,7 @@ public class IpFilterModule extends AbstractModule implements Runnable {
                                 Matcher matcher = this.pattern.matcher(response.body());
                                 while (matcher.find()) {
                                     ips.add(
-                                            AddressUtils.addressToInteger(
+                                            AddressUtils.ipv4ToInt(
                                                     matcher.group()
                                             )
                                     );

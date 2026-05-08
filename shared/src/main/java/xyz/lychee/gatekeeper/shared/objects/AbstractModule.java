@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.util.Collections;
 
 @Setter

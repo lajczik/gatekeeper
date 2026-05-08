@@ -12,7 +12,7 @@ public class ListenerHandler {
     private final Map<Integer, GeoConnection> connections = new ConcurrentHashMap<>();
 
     public void handleDisconnect(InetAddress address, String name) {
-        int addressData = AddressUtils.addressToInteger(address);
+        int addressData = AddressUtils.ipv4ToInt(address);
         GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         for (AbstractModule ac : ModuleManager.INSTANCE.getLoadedChecks()) {
             ac.handleDisconnect(connection);
@@ -20,7 +20,7 @@ public class ListenerHandler {
     }
 
     public void handlePostLogin(InetAddress address, String name) {
-        int addressData = AddressUtils.addressToInteger(address);
+        int addressData = AddressUtils.ipv4ToInt(address);
         GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         for (AbstractModule ac : ModuleManager.INSTANCE.getLoadedChecks()) {
             ac.handlePostLogin(connection);
@@ -28,7 +28,7 @@ public class ListenerHandler {
     }
 
     public Object handlePreLogin(InetAddress address, String name) {
-        int addressData = AddressUtils.addressToInteger(address);
+        int addressData = AddressUtils.ipv4ToInt(address);
         GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         connection.setTimestamp(System.currentTimeMillis());
         if (DataManager.INSTANCE.updateAndCheckAccess(connection, EnumAccess.WHITELIST)) {

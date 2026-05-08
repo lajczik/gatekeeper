@@ -26,7 +26,6 @@ import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.nio.file.Path;
 
 @Getter
@@ -135,18 +134,16 @@ public class VelocityMain implements Gatekeeper<Component> {
 
                 Component kickMessage = (Component) check.getKickMessage();
 
-                try {
-                    if (AddressUtils.isIpAddress(target)) {
-                        InetAddress addr = InetAddress.getByAddress(AddressUtils.parseIp(target));
-                        DataManager.INSTANCE.setAccess(AddressUtils.addressToInteger(addr), newAccess);
-                        if (newAccess == EnumAccess.BLACKLIST) {
-                            VelocityMain.this.proxy.getAllPlayers().stream()
-                                    .filter(player -> player.getRemoteAddress().getAddress().equals(addr))
-                                    .forEach(player -> player.disconnect(kickMessage));
-                        }
-                        return;
+                if (AddressUtils.isIpv4(target)) {
+                    int addressData = AddressUtils.ipv4ToInt(target);
+                    DataManager.INSTANCE.setAccess(addressData, newAccess);
+                    if (newAccess == EnumAccess.BLACKLIST) {
+                        VelocityMain.this.proxy.getAllPlayers().stream()
+                                .filter(player -> AddressUtils.isIpv4Equal(player.getRemoteAddress().getAddress(), addressData))
+                                .forEach(player -> player.disconnect(kickMessage));
                     }
-                } catch (Exception ignored) {}
+                    return;
+                }
 
                 DataManager.INSTANCE.setAccess(target, newAccess);
                 if (newAccess == EnumAccess.BLACKLIST) {

@@ -18,7 +18,6 @@ import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,19 +106,17 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
                 BlacklistModule check = ModuleManager.INSTANCE.getCheck(BlacklistModule.class);
                 Object kickMessage = check.getKickMessage();
 
-                try {
-                    if (AddressUtils.isIpAddress(target)) {
-                        InetAddress addr = InetAddress.getByAddress(AddressUtils.parseIp(target));
-                        DataManager.INSTANCE.setAccess(AddressUtils.addressToInteger(addr), newAccess);
-                        if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {
-                            String str = (String) kickMessage;
-                            Bukkit.getOnlinePlayers().stream()
-                                    .filter(player -> player.getAddress().getAddress().equals(addr))
-                                    .forEach(player -> player.kickPlayer(str));
-                        }
-                        return;
+                if (AddressUtils.isIpv4(target)) {
+                    int addressData = AddressUtils.ipv4ToInt(target);
+                    DataManager.INSTANCE.setAccess(addressData, newAccess);
+                    if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {
+                        String str = (String) kickMessage;
+                        Bukkit.getOnlinePlayers().stream()
+                                .filter(player -> AddressUtils.isIpv4Equal(player.getAddress().getAddress(), addressData))
+                                .forEach(player -> player.kickPlayer(str));
                     }
-                } catch (Exception ignored) {}
+                    return;
+                }
 
                 DataManager.INSTANCE.setAccess(target, newAccess);
                 if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {

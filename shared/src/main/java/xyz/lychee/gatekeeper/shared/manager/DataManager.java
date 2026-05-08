@@ -9,7 +9,6 @@ import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
-import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -210,9 +209,9 @@ public class DataManager {
 
     public byte resolveAccess(String target) {
         try {
-            if (AddressUtils.isIpAddress(target)) {
-                InetAddress addr = InetAddress.getByAddress(AddressUtils.parseIp(target));
-                return this.addresses.getOrDefault(AddressUtils.addressToInteger(addr), (byte) 0);
+            if (AddressUtils.isIpv4(target)) {
+                int addressData = AddressUtils.ipv4ToInt(target);
+                return this.addresses.getOrDefault(addressData, (byte) 0);
             }
         } catch (Exception ignored) {}
 

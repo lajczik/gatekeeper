@@ -21,7 +21,6 @@ import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.InetAddress;
 
 public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, Listener {
     private final LegacyComponentSerializer serializer = LegacyComponentSerializer.builder()
@@ -115,18 +114,16 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
                 Component kickMessage = (Component) check.getKickMessage();
 
-                try {
-                    if (AddressUtils.isIpAddress(target)) {
-                        InetAddress addr = InetAddress.getByAddress(AddressUtils.parseIp(target));
-                        DataManager.INSTANCE.setAccess(AddressUtils.addressToInteger(addr), newAccess);
-                        if (newAccess == EnumAccess.BLACKLIST) {
-                            Bukkit.getOnlinePlayers().stream()
-                                    .filter(player -> player.getAddress().getAddress().equals(addr))
-                                    .forEach(player -> player.kick(kickMessage));
-                        }
-                        return;
+                if (AddressUtils.isIpv4(target)) {
+                    int addressData = AddressUtils.ipv4ToInt(target);
+                    DataManager.INSTANCE.setAccess(addressData, newAccess);
+                    if (newAccess == EnumAccess.BLACKLIST) {
+                        Bukkit.getOnlinePlayers().stream()
+                                .filter(player -> AddressUtils.isIpv4Equal(player.getAddress().getAddress(), addressData))
+                                .forEach(player -> player.kick(kickMessage));
                     }
-                } catch (Exception ignored) {}
+                    return;
+                }
 
                 DataManager.INSTANCE.setAccess(target, newAccess);
                 if (newAccess == EnumAccess.BLACKLIST) {

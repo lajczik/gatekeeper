@@ -111,6 +111,7 @@ public class GeoipManager implements Runnable {
             }
         }
 
+        cache.put(ip, defaultValue);
         return defaultValue;
     }
 

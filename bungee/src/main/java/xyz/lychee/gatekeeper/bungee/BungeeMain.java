@@ -19,7 +19,6 @@ import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -106,19 +105,17 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
                 BlacklistModule check = ModuleManager.INSTANCE.getCheck(BlacklistModule.class);
                 Object kickMessage = check.getKickMessage();
 
-                try {
-                    if (AddressUtils.isIpAddress(target)) {
-                        InetAddress addr = InetAddress.getByAddress(AddressUtils.parseIp(target));
-                        DataManager.INSTANCE.setAccess(AddressUtils.addressToInteger(addr), newAccess);
-                        if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof BaseComponent) {
-                            BaseComponent baseComponent = (BaseComponent) kickMessage;
-                            getProxy().getPlayers().stream()
-                                    .filter(player -> ((InetSocketAddress) player.getSocketAddress()).getAddress().equals(addr))
-                                    .forEach(player -> player.disconnect(baseComponent));
-                        }
-                        return;
+                if (AddressUtils.isIpv4(target)) {
+                    int addressData = AddressUtils.ipv4ToInt(target);
+                    DataManager.INSTANCE.setAccess(addressData, newAccess);
+                    if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof BaseComponent) {
+                        BaseComponent baseComponent = (BaseComponent) kickMessage;
+                        getProxy().getPlayers().stream()
+                                .filter(player -> AddressUtils.isIpv4Equal(((InetSocketAddress) player.getSocketAddress()).getAddress(), addressData))
+                                .forEach(player -> player.disconnect(baseComponent));
                     }
-                } catch (Exception ignored) {}
+                    return;
+                }
 
                 DataManager.INSTANCE.setAccess(target, newAccess);
                 if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof BaseComponent) {

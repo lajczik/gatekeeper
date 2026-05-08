@@ -1,12 +1,9 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.manager.DataManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
-
-import java.net.InetAddress;
 
 public class BlacklistModule extends AbstractModule {
     public BlacklistModule(Gatekeeper<?> gatekeeper) {

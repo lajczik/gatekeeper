@@ -17,23 +17,6 @@ public class BinaryGeoIPBuilder {
     public static final int VERSION = 1;
     private static final int MAX_GAP = 256;
 
-    private static int ipToInt(String ipAddress) {
-        int result = 0;
-        int part = 0;
-        int len = ipAddress.length();
-
-        for (int i = 0; i < len; i++) {
-            char c = ipAddress.charAt(i);
-            if (c == '.') {
-                result = (result << 8) | part;
-                part = 0;
-            } else {
-                part = part * 10 + (c - '0');
-            }
-        }
-        return (result << 8) | part;
-    }
-
     public void downloadSource(File sourceCsv) throws IOException {
         URI uri = URI.create("https://github.com/iplocate/ip-address-databases/raw/refs/heads/main/ip-to-asn/ip-to-asn.csv.zip");
         try (InputStream is = uri.toURL().openStream();
@@ -103,7 +86,7 @@ public class BinaryGeoIPBuilder {
         if (slashIdx == -1) return null;
 
         try {
-            int ipNum = ipToInt(network.substring(0, slashIdx));
+            int ipNum = AddressUtils.ipv4ToInt(network.substring(0, slashIdx));
             int prefix = Integer.parseInt(network.substring(slashIdx + 1));
 
             long mask = 0xFFFFFFFFL << (32 - prefix);
