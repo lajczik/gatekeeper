@@ -10,11 +10,11 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bstats.velocity.Metrics;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
@@ -29,20 +29,18 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.file.Path;
 
+@Getter
 public class VelocityMain implements Gatekeeper<Component> {
     private final ProxyServer proxy;
     private final File dataDirectory;
     private final LegacyComponentSerializer serializer;
     private final AbstractLang<Component> language;
-    private final Metrics.Factory metricsFactory;
     private final String version;
-    private ColoredLogger logger;
-    private Metrics metrics;
+    private final ColoredLogger logger;
 
     @Inject
-    public VelocityMain(ProxyServer proxy, @DataDirectory Path dataDirectory, Metrics.Factory metricsFactory, PluginContainer container) {
+    public VelocityMain(ProxyServer proxy, @DataDirectory Path dataDirectory, PluginContainer container) {
         this.proxy = proxy;
-        this.metricsFactory = metricsFactory;
         this.dataDirectory = dataDirectory.toFile();
         this.serializer = LegacyComponentSerializer.builder()
                 .character('&')
@@ -52,23 +50,30 @@ public class VelocityMain implements Gatekeeper<Component> {
                 .build();
         this.language = new VelocityLang(this);
         this.version = container.getDescription().getVersion().orElse("1.0.0");
+        this.logger = new VelocityColoredLogger();
     }
 
     @Subscribe
     public void onInit(ProxyInitializeEvent event) {
-        this.logger = new VelocityColoredLogger();
-        this.metrics = this.metricsFactory.make(this, 27356);
+        this.logger.sendHeader(this.version);
 
         ConfigManager.INSTANCE.loadConfig(this);
         DataManager.INSTANCE.loadDatabase(this);
         ModuleManager.INSTANCE.loadChecks(this);
         GeoipManager.INSTANCE.loadDatabases(this);
         TaskManager.INSTANCE.loadTasks(this);
+        UpdaterManager.INSTANCE.loadUpdater(this);
+        MetricsManager.INSTANCE.loadMetrics(this, json -> {
+            json.put("playerAmount", this.proxy.getPlayerCount());
+            json.put("onlineMode", this.proxy.getConfiguration().isOnlineMode() ? 1 : 0);
+            json.put("bukkitVersion", this.proxy.getVersion().getVersion());
+            json.put("bukkitName", this.proxy.getVersion().getName());
+        });
 
         this.language.loadLanguage();
 
         EventManager eventManager = this.proxy.getEventManager();
-        eventManager.register(this, new VelocityListeners());
+        eventManager.register(this, new VelocityListeners(this));
 
         CommandManager commandManager = this.proxy.getCommandManager();
         commandManager.register(commandManager.metaBuilder("gatekeeper").plugin(this).build(), new VelocityCommand(this));
@@ -76,8 +81,7 @@ public class VelocityMain implements Gatekeeper<Component> {
 
     @Subscribe
     public void onShutdown(ProxyShutdownEvent event) {
-        if (this.metrics != null) this.metrics.shutdown();
-
+        MetricsManager.INSTANCE.shutdown();
         DataManager.INSTANCE.close();
     }
 

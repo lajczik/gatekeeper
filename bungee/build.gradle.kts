@@ -6,8 +6,6 @@ plugins {
 dependencies {
     compileOnly(project(":shared"))
     compileOnly("net.md-5:bungeecord-api:1.21-R0.4")
-
-    implementation("org.bstats:bstats-bungeecord:3.1.0")
 }
 
 tasks {

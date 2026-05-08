@@ -4,7 +4,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
@@ -31,26 +30,29 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
             .hexColors()
             .useUnusualXRepeatedCharacterHexFormat()
             .build();
-    private ColoredLogger logger;
-    private Metrics metrics;
-    private AbstractLang<Component> language;
+    private final AbstractLang<Component> language = new PaperLang(this);
+    private final ColoredLogger logger = new ColoredLogger(Bukkit.getLogger());
 
     @Override
     public void onEnable() {
-        this.logger = new ColoredLogger(Bukkit.getLogger());
-        this.metrics = new Metrics(this, 27416);
-        this.language = new PaperLang(this);
+        this.logger.sendHeader(this.version());
 
         ConfigManager.INSTANCE.loadConfig(this);
         DataManager.INSTANCE.loadDatabase(this);
         ModuleManager.INSTANCE.loadChecks(this);
         GeoipManager.INSTANCE.loadDatabases(this);
         TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.load(this);
+        UpdaterManager.INSTANCE.loadUpdater(this);
+        MetricsManager.INSTANCE.loadMetrics(this, json -> {
+            json.put("playerAmount", Bukkit.getOnlinePlayers().size());
+            json.put("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);
+            json.put("bukkitVersion", Bukkit.getVersion());
+            json.put("bukkitName", Bukkit.getName());
+        });
 
         this.language.loadLanguage();
 
-        Bukkit.getPluginManager().registerEvents(new PaperListeners(), this);
+        Bukkit.getPluginManager().registerEvents(new PaperListeners(this), this);
 
         PaperCommand commandHandler = new PaperCommand(this);
         CommandMap commandMap = Bukkit.getServer().getCommandMap();
@@ -59,8 +61,7 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
     @Override
     public void onDisable() {
-        if (this.metrics != null) this.metrics.shutdown();
-
+        MetricsManager.INSTANCE.shutdown();
         DataManager.INSTANCE.close();
     }
 

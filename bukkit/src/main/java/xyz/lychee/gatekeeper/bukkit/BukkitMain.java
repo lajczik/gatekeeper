@@ -1,13 +1,11 @@
 package xyz.lychee.gatekeeper.bukkit;
 
 import net.md_5.bungee.api.ChatColor;
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
@@ -25,27 +23,29 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listener {
-    private ColoredLogger logger;
-    private Metrics metrics;
-    private AbstractLang<String> language;
+    private final AbstractLang<String> language = new BukkitLang(this);
+    private final ColoredLogger logger = new ColoredLogger(Bukkit.getLogger());
 
     @Override
     public void onEnable() {
-        this.logger = new ColoredLogger(Bukkit.getLogger());
-        this.metrics = new Metrics(this, 27416);
-        this.language = new BukkitLang(this);
+        this.logger.sendHeader(this.version());
 
         ConfigManager.INSTANCE.loadConfig(this);
         DataManager.INSTANCE.loadDatabase(this);
         ModuleManager.INSTANCE.loadChecks(this);
         GeoipManager.INSTANCE.loadDatabases(this);
         TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.load(this);
+        UpdaterManager.INSTANCE.loadUpdater(this);
+        MetricsManager.INSTANCE.loadMetrics(this, json -> {
+            json.put("playerAmount", Bukkit.getOnlinePlayers().size());
+            json.put("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);
+            json.put("bukkitVersion", Bukkit.getVersion());
+            json.put("bukkitName", Bukkit.getName());
+        });
 
         this.language.loadLanguage();
 
-        PluginManager pm = Bukkit.getPluginManager();
-        pm.registerEvents(new BukkitListeners(), this);
+        Bukkit.getPluginManager().registerEvents(new BukkitListeners(this), this);
 
         BukkitCommand commandHandler = new BukkitCommand(this);
         PluginCommand command = this.getCommand("gatekeeper");
@@ -55,8 +55,7 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
 
     @Override
     public void onDisable() {
-        if (this.metrics != null) this.metrics.shutdown();
-
+        MetricsManager.INSTANCE.shutdown();
         DataManager.INSTANCE.close();
     }
 

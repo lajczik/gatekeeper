@@ -8,7 +8,6 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginManager;
-import org.bstats.bungeecord.Metrics;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
@@ -26,35 +25,36 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Listener {
-    private ColoredLogger logger;
-    private Metrics metrics;
-    private AbstractLang<BaseComponent> language;
+    private final AbstractLang<BaseComponent> language = new BungeeLang(this);
+    private final ColoredLogger logger = new ColoredLogger(this.getProxy().getLogger());
 
     @Override
     public void onEnable() {
-        this.logger = new ColoredLogger(this.getProxy().getLogger());
-        this.metrics = new Metrics(this, 27413);
-        this.language = new BungeeLang(this);
+        this.logger.sendHeader(this.version());
 
         ConfigManager.INSTANCE.loadConfig(this);
         DataManager.INSTANCE.loadDatabase(this);
         ModuleManager.INSTANCE.loadChecks(this);
         GeoipManager.INSTANCE.loadDatabases(this);
         TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.load(this);
+        UpdaterManager.INSTANCE.loadUpdater(this);
+        MetricsManager.INSTANCE.loadMetrics(this, json -> {
+            json.put("playerAmount", this.getProxy().getOnlineCount());
+            json.put("onlineMode", this.getProxy().getConfig().isOnlineMode() ? 1 : 0);
+            json.put("bukkitVersion", this.getProxy().getVersion());
+            json.put("bukkitName", this.getProxy().getName());
+        });
 
         this.language.loadLanguage();
 
         PluginManager pm = getProxy().getPluginManager();
-        pm.registerListener(this, new BungeeListeners());
-
+        pm.registerListener(this, new BungeeListeners(this));
         pm.registerCommand(this, new BungeeCommand(this));
     }
 
     @Override
     public void onDisable() {
-        if (this.metrics != null) this.metrics.shutdown();
-
+        MetricsManager.INSTANCE.shutdown();
         DataManager.INSTANCE.close();
     }
 
