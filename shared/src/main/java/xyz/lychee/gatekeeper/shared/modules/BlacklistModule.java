@@ -15,7 +15,7 @@ public class BlacklistModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        return DataManager.INSTANCE.hasAccess(connection, EnumAccess.BLACKLIST);
+        return connection.getAccess() == EnumAccess.BLACKLIST;
     }
 
     @Override

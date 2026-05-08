@@ -145,9 +145,15 @@ public class DataManager {
         }
     }
 
-    public boolean hasAccess(GeoConnection connection, EnumAccess access) {
-        return this.addresses.getOrDefault(connection.getAddressData(), (byte) 0) == access.getType()
-                || this.nicknames.getOrDefault(connection.getName(), (byte) 0) == access.getType();
+    public boolean updateAndCheckAccess(GeoConnection connection, EnumAccess targetAccess) {
+        Byte access = this.nicknames.get(connection.getName());
+        if (access == null) {
+            access = this.addresses.get(connection.getAddressData());
+        }
+        if (access != null) {
+            connection.setAccess(EnumAccess.getByType(access));
+        }
+        return access != null && access == targetAccess.getType();
     }
 
     public void setAccess(int address, EnumAccess access) {

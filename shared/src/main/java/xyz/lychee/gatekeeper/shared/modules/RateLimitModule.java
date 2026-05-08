@@ -21,7 +21,7 @@ public class RateLimitModule extends AbstractModule implements Runnable {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        long now = System.currentTimeMillis();
+        long now = connection.getTimestamp();
         if (this.server_connect + this.server_limit > now) {
             return true;
         }
@@ -33,6 +33,7 @@ public class RateLimitModule extends AbstractModule implements Runnable {
     @Override
     public boolean handlePostLogin(GeoConnection connection) {
         long now = System.currentTimeMillis();
+        connection.setTimestamp(now);
         this.server_connect = now;
         this.ip_connect.put(connection.getAddressData(), now);
         return false;

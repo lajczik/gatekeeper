@@ -16,6 +16,8 @@ public class GeoConnection {
     private final int addressData;
     private final String country;
     private final int asn;
+    private volatile long timestamp = -1L;
+    private volatile EnumAccess access = EnumAccess.NULL;
 
     public GeoConnection(InetAddress address, int addressData, String name) {
         this.address = address;

@@ -5,7 +5,6 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.net.InetAddress;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +30,8 @@ public class ListenerHandler {
     public Object handlePreLogin(InetAddress address, String name) {
         int addressData = AddressUtils.addressToInteger(address);
         GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
-        if (DataManager.INSTANCE.hasAccess(connection, EnumAccess.WHITELIST)) {
+        connection.setTimestamp(System.currentTimeMillis());
+        if (DataManager.INSTANCE.updateAndCheckAccess(connection, EnumAccess.WHITELIST)) {
             return null;
         }
 
