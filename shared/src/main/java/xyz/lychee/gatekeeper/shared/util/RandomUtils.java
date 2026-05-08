@@ -1,11 +1,13 @@
 package xyz.lychee.gatekeeper.shared.util;
 
+import xyz.lychee.gatekeeper.shared.objects.FastRandom;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-public class RandomUtil {
+public class RandomUtils {
     public static final FastRandom RANDOM = new FastRandom();
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
     public static final Pattern PATTERN = Pattern.compile("-?[0-9]+");
