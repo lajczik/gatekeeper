@@ -80,59 +80,38 @@ public class GeoipManager implements Runnable {
     }
 
     public @NotNull String getCountryCode(int addressData) {
-        String cached = countryCache.get(addressData);
-        if (cached != null) {
-            return cached;
-        }
-
-        String result = BinaryGeoIPDatabase.UNKNOWN_COUNTRY;
-        int low = 0;
-        int high = countryRangeCache.size() - 1;
-
-        while (low <= high) {
-            int mid = (low + high) >>> 1;
-            GeoRange<String> midVal = countryRangeCache.get(mid);
-
-            if (Integer.compareUnsigned(addressData, midVal.getStart()) < 0) {
-                high = mid - 1;
-            } else if (Integer.compareUnsigned(addressData, midVal.getEnd()) > 0) {
-                low = mid + 1;
-            } else {
-                result = midVal.getValue();
-                countryCache.put(addressData, result);
-                break;
-            }
-        }
-
-        return result;
+        return this.getFromCacheOrSearch(addressData, countryCache, countryRangeCache, BinaryGeoIPDatabase.UNKNOWN_COUNTRY);
     }
 
     public @NotNull Integer getAsnCode(int addressData) {
-        Integer cached = asnCache.get(addressData);
+        return this.getFromCacheOrSearch(addressData, asnCache, asnRangeCache, BinaryGeoIPDatabase.UNKNOWN_ASN);
+    }
+
+    private <V> V getFromCacheOrSearch(int ip, Map<Integer, V> cache, List<GeoRange<V>> ranges, V defaultValue) {
+        V cached = cache.get(ip);
         if (cached != null) {
             return cached;
         }
 
-        Integer result = BinaryGeoIPDatabase.UNKNOWN_ASN;
         int low = 0;
-        int high = asnRangeCache.size() - 1;
+        int high = ranges.size() - 1;
 
         while (low <= high) {
             int mid = (low + high) >>> 1;
-            GeoRange<Integer> midVal = asnRangeCache.get(mid);
+            GeoRange<V> midVal = ranges.get(mid);
 
-            if (Integer.compareUnsigned(addressData, midVal.getStart()) < 0) {
+            if (Integer.compareUnsigned(ip, midVal.getStart()) < 0) {
                 high = mid - 1;
-            } else if (Integer.compareUnsigned(addressData, midVal.getEnd()) > 0) {
+            } else if (Integer.compareUnsigned(ip, midVal.getEnd()) > 0) {
                 low = mid + 1;
             } else {
-                result = midVal.getValue();
-                asnCache.put(addressData, result);
-                break;
+                V foundValue = midVal.getValue();
+                cache.put(ip, foundValue);
+                return foundValue;
             }
         }
 
-        return result;
+        return defaultValue;
     }
 
     public void clearCache() {
