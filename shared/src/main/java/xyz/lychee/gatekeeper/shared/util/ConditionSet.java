@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class ConditionSet {
+    private static final Pattern TERM_PATTERN = Pattern.compile("^(.+?)(>=|<=|>|<|=)(.+)$");
     private final Term[][] orClauses;
 
     private ConditionSet(Term[][] orClauses) {
@@ -44,8 +45,6 @@ public final class ConditionSet {
         return new ConditionSet(compiledOrs.toArray(new Term[0][]));
     }
 
-    private static final Pattern TERM_PATTERN = Pattern.compile("^(.+?)(>=|<=|>|<|=)(.+)$");
-
     private static Term parseTerm(String expression) {
         Matcher m = TERM_PATTERN.matcher(expression);
         if (!m.matches()) return null;
@@ -65,10 +64,18 @@ public final class ConditionSet {
                 double d = Double.parseDouble(valuePart);
                 Op op;
                 switch (opStr) {
-                    case ">=": op = Op.GREATER_THAN_EQUAL; break;
-                    case "<=": op = Op.LESS_THAN_EQUAL; break;
-                    case ">":  op = Op.GREATER_THAN; break;
-                    default:   op = Op.LESS_THAN; break;
+                    case ">=":
+                        op = Op.GREATER_THAN_EQUAL;
+                        break;
+                    case "<=":
+                        op = Op.LESS_THAN_EQUAL;
+                        break;
+                    case ">":
+                        op = Op.GREATER_THAN;
+                        break;
+                    default:
+                        op = Op.LESS_THAN;
+                        break;
                 }
                 return new Term(segments, op, d, null);
             } catch (NumberFormatException ex) {
@@ -158,11 +165,16 @@ public final class ConditionSet {
 
         private boolean compareNumber(double actual) {
             switch (op) {
-                case GREATER_THAN: return actual > expectedNumber;
-                case LESS_THAN: return actual < expectedNumber;
-                case GREATER_THAN_EQUAL: return actual >= expectedNumber;
-                case LESS_THAN_EQUAL: return actual <= expectedNumber;
-                default: return false;
+                case GREATER_THAN:
+                    return actual > expectedNumber;
+                case LESS_THAN:
+                    return actual < expectedNumber;
+                case GREATER_THAN_EQUAL:
+                    return actual >= expectedNumber;
+                case LESS_THAN_EQUAL:
+                    return actual <= expectedNumber;
+                default:
+                    return false;
             }
         }
     }
