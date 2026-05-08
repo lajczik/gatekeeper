@@ -10,8 +10,8 @@ import xyz.lychee.gatekeeper.shared.util.BinaryGeoIPDatabase;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
@@ -22,8 +22,8 @@ public class GeoipManager implements Runnable {
     private final Map<Integer, Integer> asnCache = new ConcurrentHashMap<>();
     private final BinaryGeoIPDatabase database = new BinaryGeoIPDatabase();
     private Gatekeeper<?> gatekeeper;
-    private Set<GeoRange<String>> countryRangeCache = Collections.emptySet();
-    private Set<GeoRange<Integer>> asnRangeCache = Collections.emptySet();
+    private List<GeoRange<String>> countryRangeCache = Collections.emptyList();
+    private List<GeoRange<Integer>> asnRangeCache = Collections.emptyList();
 
     public void loadDatabases(Gatekeeper<?> gatekeeper) {
         this.gatekeeper = gatekeeper;
@@ -85,15 +85,26 @@ public class GeoipManager implements Runnable {
             return cached;
         }
 
-        for (GeoRange<String> record : countryRangeCache) {
-            if (record.contains(addressData)) {
-                countryCache.put(addressData, record.getValue());
-                return record.getValue();
+        String result = BinaryGeoIPDatabase.UNKNOWN_COUNTRY;
+        int low = 0;
+        int high = countryRangeCache.size() - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            GeoRange<String> midVal = countryRangeCache.get(mid);
+
+            if (Integer.compareUnsigned(addressData, midVal.getStart()) < 0) {
+                high = mid - 1;
+            } else if (Integer.compareUnsigned(addressData, midVal.getEnd()) > 0) {
+                low = mid + 1;
+            } else {
+                result = midVal.getValue();
+                countryCache.put(addressData, result);
+                break;
             }
         }
-        String unknown = BinaryGeoIPDatabase.UNKNOWN_COUNTRY;
-        countryCache.put(addressData, unknown);
-        return unknown;
+
+        return result;
     }
 
     public @NotNull Integer getAsnCode(int addressData) {
@@ -102,15 +113,26 @@ public class GeoipManager implements Runnable {
             return cached;
         }
 
-        for (GeoRange<Integer> record : asnRangeCache) {
-            if (record.contains(addressData)) {
-                asnCache.put(addressData, record.getValue());
-                return record.getValue();
+        Integer result = BinaryGeoIPDatabase.UNKNOWN_ASN;
+        int low = 0;
+        int high = asnRangeCache.size() - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            GeoRange<Integer> midVal = asnRangeCache.get(mid);
+
+            if (Integer.compareUnsigned(addressData, midVal.getStart()) < 0) {
+                high = mid - 1;
+            } else if (Integer.compareUnsigned(addressData, midVal.getEnd()) > 0) {
+                low = mid + 1;
+            } else {
+                result = midVal.getValue();
+                asnCache.put(addressData, result);
+                break;
             }
         }
-        int unknown = BinaryGeoIPDatabase.UNKNOWN_ASN;
-        asnCache.put(addressData, unknown);
-        return unknown;
+
+        return result;
     }
 
     public void clearCache() {

@@ -8,7 +8,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -80,19 +82,21 @@ public class BinaryGeoIPDatabase {
         return new GeoRange<>(start, end, asn);
     }
 
-    public Set<GeoRange<String>> getAllCountryRanges() {
-        Set<GeoRange<String>> ranges = new HashSet<>(countryRecordCount);
+    public List<GeoRange<String>> getAllCountryRanges() {
+        List<GeoRange<String>> ranges = new ArrayList<>(countryRecordCount);
         for (int i = 0; i < countryRecordCount; i++) {
             ranges.add(getCountryRecord(i));
         }
+        ranges.sort((a, b) -> Integer.compareUnsigned(a.getStart(), b.getStart()));
         return ranges;
     }
 
-    public Set<GeoRange<Integer>> getAllASNRanges() {
-        Set<GeoRange<Integer>> ranges = new HashSet<>(asnRecordCount);
+    public List<GeoRange<Integer>> getAllASNRanges() {
+        List<GeoRange<Integer>> ranges = new ArrayList<>(asnRecordCount);
         for (int i = 0; i < asnRecordCount; i++) {
             ranges.add(getASNRecord(i));
         }
+        ranges.sort((a, b) -> Integer.compareUnsigned(a.getStart(), b.getStart()));
         return ranges;
     }
 }
