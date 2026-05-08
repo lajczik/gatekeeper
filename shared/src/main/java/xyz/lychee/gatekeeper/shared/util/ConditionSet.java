@@ -183,14 +183,12 @@ public final class ConditionSet {
     public static final class Provider {
         private final String name;
         private final String url;
-        private final int priority;
         private final Map<String, String> headers;
         private final ConditionSet condition;
 
-        public Provider(String name, String url, int priority, Map<String, String> headers, ConditionSet condition) {
+        public Provider(String name, String url, Map<String, String> headers, ConditionSet condition) {
             this.name = name;
             this.url = url;
-            this.priority = priority;
             this.headers = headers;
             this.condition = condition;
         }
