@@ -3,14 +3,14 @@ package xyz.lychee.gatekeeper.shared.modules;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
-import xyz.lychee.gatekeeper.shared.util.RandomUtil;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.SerializeUtils;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,7 +38,7 @@ public class AsnFilterModule extends AbstractModule implements Runnable {
     public AsnFilterModule(Gatekeeper<?> gatekeeper) {
         super(gatekeeper, "AsnFilter");
 
-        this.asnPath = this.getGatekeeper().dataFolder().toPath().resolve("asn.txt");
+        this.asnPath = this.getGatekeeper().dataFolder().toPath().resolve("asn_data.bin");
     }
 
     @Override
@@ -67,18 +67,14 @@ public class AsnFilterModule extends AbstractModule implements Runnable {
         }
 
         if (Files.exists(this.asnPath)) {
-            Files.readAllLines(this.asnPath).forEach(line -> {
-                if (RandomUtil.isInteger(line)) {
-                    this.downloadedAsn.add(Integer.parseInt(line));
-                }
-            });
+            SerializeUtils.deserialize(Files.readAllBytes(this.asnPath), this.downloadedAsn);
+            this.getGatekeeper().logger().info("Loaded "+this.downloadedAsn.size()+" suspicious ASNs from file.");
         }
-
 
         this.interval = this.getConfig().getInt("auto_update.interval") * 60L * 60L;
         this.pattern = Pattern.compile(this.getConfig().getString("auto_update.asn_pattern"));
         this.sources.addAll(this.getConfig().getStringList("auto_update.sources"));
-        this.task = this.executor.scheduleAtFixedRate(this, 10L, interval, TimeUnit.SECONDS);
+        this.task = this.executor.scheduleAtFixedRate(this, 0L, interval, TimeUnit.SECONDS);
 
         this.listedAsn.addAll(this.getConfig().getIntList("list"));
         this.list_mode = this.getConfig().getBoolean("list_mode");
@@ -99,8 +95,6 @@ public class AsnFilterModule extends AbstractModule implements Runnable {
 
         Executor delayed = CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, this.executor);
 
-        Set<String> lines = ConcurrentHashMap.newKeySet();
-
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
 
         for (String source : this.sources) {
@@ -118,27 +112,27 @@ public class AsnFilterModule extends AbstractModule implements Runnable {
                         .exceptionally(t -> null)
                         .thenAcceptAsync(response -> {
                             if (response != null && response.statusCode() == 200) {
-                                Set<Integer> asns = new HashSet<>();
+                                Set<Integer> asnSet = new HashSet<>();
                                 Matcher matcher = this.pattern.matcher(response.body());
                                 while (matcher.find()) {
                                     String group = matcher.group();
-                                    if (RandomUtil.isInteger(group)) {
-                                        asns.add(Integer.parseInt(group));
-                                        lines.add(group);
+                                    if (RandomUtils.isInteger(group)) {
+                                        asnSet.add(Integer.parseInt(group));
                                     }
                                 }
 
-                                this.downloadedAsn.addAll(asns);
+                                this.downloadedAsn.addAll(asnSet);
                             }
                         }, delayed);
             });
         }
 
         chain.thenRun(() -> {
+            byte[] serialized = SerializeUtils.serialize(this.downloadedAsn);
             try {
-                Files.write(this.asnPath, lines, StandardCharsets.UTF_8);
+                Files.write(this.asnPath, serialized);
             } catch (IOException ignored) {}
-            this.getGatekeeper().logger().info("Downloaded " + lines.size() + " danger asns to database!");
+            this.getGatekeeper().logger().info("Downloaded " + this.downloadedAsn.size() + " danger ASNs to database!");
         });
     }
 }

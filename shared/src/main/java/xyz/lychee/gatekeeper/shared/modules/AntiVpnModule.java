@@ -6,8 +6,8 @@ import dev.dejvokep.boostedyaml.block.implementation.Section;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
-import xyz.lychee.gatekeeper.shared.util.ConditionSet;
-import xyz.lychee.gatekeeper.shared.util.RandomUtil;
+import xyz.lychee.gatekeeper.shared.objects.ConditionSet;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -167,7 +167,7 @@ public class AntiVpnModule extends AbstractModule {
                 this.providers.add(new ConditionSet.Provider(Objects.toString(key), url, headers, cs));
             }
         }
-        Collections.shuffle(this.providers, RandomUtil.RANDOM);
+        Collections.shuffle(this.providers, RandomUtils.RANDOM);
 
         return true;
     }
