@@ -33,27 +33,22 @@ public class AddressUtils {
     }
 
     public static int addressToInteger(String address) {
-        int colonIdx = address.indexOf(':');
-        String ipPart = (colonIdx > -1 ? address.substring(0, colonIdx) : address).trim();
-        String[] parts = ipPart.split("\\.");
-        if (parts.length != 4) {
-            return 0;
-        }
-
         int result = 0;
-        for (int i = 0; i < 4; i++) {
-            String part = parts[i];
-            if (!RandomUtil.isInteger(part)) {
-                return 0;
-            }
+        int part = 0;
+        int len = address.length();
 
-            int octet = Integer.parseInt(parts[i]);
-            if (octet < 0 || octet > 255) {
-                return 0;
+        for (int i = 0; i < len; i++) {
+            char c = address.charAt(i);
+            if (c == '.') {
+                result = (result << 8) | part;
+                part = 0;
+            } else if (c == ':') {
+                break;
+            } else {
+                part = part * 10 + (c - '0');
             }
-            result |= (octet & 0xFF) << (24 - (8 * i));
         }
-        return result;
+        return (result << 8) | part;
     }
 
     public static boolean isIpAddress(String input) {
