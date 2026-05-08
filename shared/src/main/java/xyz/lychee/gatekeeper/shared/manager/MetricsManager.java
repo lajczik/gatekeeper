@@ -4,7 +4,7 @@ import com.grack.nanojson.JsonObject;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.charts.CustomChart;
-import xyz.lychee.gatekeeper.shared.util.MetricsBase;
+import xyz.lychee.gatekeeper.shared.objects.MetricsBase;
 
 import java.io.IOException;
 import java.util.UUID;

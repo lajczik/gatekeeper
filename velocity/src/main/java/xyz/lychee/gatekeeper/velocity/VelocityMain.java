@@ -22,7 +22,7 @@ import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
 import xyz.lychee.gatekeeper.shared.objects.CommandPlayer;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
+import xyz.lychee.gatekeeper.shared.objects.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
@@ -111,7 +111,7 @@ public class VelocityMain implements Gatekeeper<Component> {
 
     @Override
     public CommandPlayer<Component> commandPlayer(Object player) {
-        return new CommandPlayer<Component>(player) {
+        return new CommandPlayer<>(player) {
             @Override
             public boolean hasPermission(String permission) {
                 if (this.getPlayer() instanceof CommandSource) {

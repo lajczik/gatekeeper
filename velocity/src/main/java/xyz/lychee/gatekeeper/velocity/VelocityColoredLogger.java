@@ -3,7 +3,7 @@ package xyz.lychee.gatekeeper.velocity;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import xyz.lychee.gatekeeper.shared.util.ColoredLogger;
+import xyz.lychee.gatekeeper.shared.objects.ColoredLogger;
 
 import java.util.logging.Level;
 import java.util.logging.LogRecord;

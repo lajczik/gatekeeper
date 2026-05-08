@@ -4,8 +4,8 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.GeoRange;
-import xyz.lychee.gatekeeper.shared.util.BinaryGeoIPBuilder;
-import xyz.lychee.gatekeeper.shared.util.BinaryGeoIPDatabase;
+import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPBuilder;
+import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPDatabase;
 
 import java.io.File;
 import java.io.IOException;

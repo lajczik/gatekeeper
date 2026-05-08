@@ -4,13 +4,13 @@ import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.SerializeUtils;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,7 +38,7 @@ public class IpFilterModule extends AbstractModule implements Runnable {
     public IpFilterModule(Gatekeeper<?> gatekeeper) {
         super(gatekeeper, "IpFilter");
 
-        this.ipsPath = this.getGatekeeper().dataFolder().toPath().resolve("ips.txt");
+        this.ipsPath = this.getGatekeeper().dataFolder().toPath().resolve("proxies_data.bin");
     }
 
     @Override
@@ -68,9 +68,8 @@ public class IpFilterModule extends AbstractModule implements Runnable {
         }
 
         if (Files.exists(this.ipsPath)) {
-            Files.readAllLines(this.ipsPath).forEach(line ->
-                    this.downloadedIps.add(Integer.parseInt(line))
-            );
+            SerializeUtils.deserialize(Files.readAllBytes(this.ipsPath), this.downloadedIps);
+            this.getGatekeeper().logger().info("Loaded "+this.downloadedIps.size()+" proxy IPs from file.");
         }
 
         this.interval = this.getConfig().getInt("auto_update.interval") * 60L * 60L;
@@ -78,7 +77,7 @@ public class IpFilterModule extends AbstractModule implements Runnable {
         this.sources.addAll(this.getConfig().getStringList("auto_update.sources"));
         Collections.shuffle(this.sources);
 
-        this.task = this.executor.scheduleAtFixedRate(this, 10L, this.interval, TimeUnit.SECONDS);
+        this.task = this.executor.scheduleAtFixedRate(this, 0L, this.interval, TimeUnit.SECONDS);
 
         for (String address : this.getConfig().getStringList("list")) {
             this.listedIps.add(AddressUtils.ipv4ToInt(address));
@@ -133,14 +132,11 @@ public class IpFilterModule extends AbstractModule implements Runnable {
         }
 
         chain.thenRun(() -> {
+            byte[] serialized = SerializeUtils.serialize(this.downloadedIps);
             try {
-                StringBuilder lines = new StringBuilder();
-                for (int ip : this.downloadedIps) {
-                    lines.append(ip).append('\n');
-                }
-                Files.writeString(this.ipsPath, lines, StandardCharsets.UTF_8);
+                Files.write(this.ipsPath, serialized);
             } catch (IOException ignored) {}
-            this.getGatekeeper().logger().info("Downloaded " + this.downloadedIps.size() + " proxy ips to database!");
+            this.getGatekeeper().logger().info("Downloaded " + this.downloadedIps.size() + " proxy IPs to database!");
         });
     }
 }
