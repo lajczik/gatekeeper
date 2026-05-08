@@ -1,4 +1,4 @@
-package xyz.lychee.gatekeeper.shared.util;
+package xyz.lychee.gatekeeper.shared.objects;
 
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;

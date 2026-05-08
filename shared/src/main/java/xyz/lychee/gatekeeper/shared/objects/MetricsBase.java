@@ -1,9 +1,10 @@
-package xyz.lychee.gatekeeper.shared.util;
+package xyz.lychee.gatekeeper.shared.objects;
 
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
 import xyz.lychee.gatekeeper.shared.charts.CustomChart;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -75,8 +76,8 @@ public class MetricsBase {
         // submit delay or frequency!
         // WARNING: Modifying this code will get your plugin banned on bStats. Just
         // don't do it!
-        long initialDelay = 1000 * 60 * (3 + RandomUtil.RANDOM.nextInt(3));
-        long secondDelay = 1000 * 60 * RandomUtil.RANDOM.nextInt(30);
+        long initialDelay = 1000 * 60 * (3 + RandomUtils.RANDOM.nextInt(3));
+        long secondDelay = 1000 * 60 * RandomUtils.RANDOM.nextInt(30);
         scheduler.schedule(this::submitData, initialDelay, TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(this::submitData, initialDelay + secondDelay, 1000 * 60 * 30, TimeUnit.MILLISECONDS);
     }

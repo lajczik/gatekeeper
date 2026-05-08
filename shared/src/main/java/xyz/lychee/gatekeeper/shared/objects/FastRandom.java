@@ -1,4 +1,4 @@
-package xyz.lychee.gatekeeper.shared.util;
+package xyz.lychee.gatekeeper.shared.objects;
 
 import java.util.Arrays;
 import java.util.Random;

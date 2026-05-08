@@ -1,4 +1,4 @@
-package xyz.lychee.gatekeeper.shared.util;
+package xyz.lychee.gatekeeper.shared.objects;
 
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;

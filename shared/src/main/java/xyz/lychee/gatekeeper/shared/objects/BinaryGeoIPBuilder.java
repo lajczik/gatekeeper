@@ -1,6 +1,7 @@
-package xyz.lychee.gatekeeper.shared.util;
+package xyz.lychee.gatekeeper.shared.objects;
 
-import xyz.lychee.gatekeeper.shared.objects.GeoRange;
+import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -61,7 +62,7 @@ public class BinaryGeoIPBuilder {
                 int end = (int) ipRange[1];
 
                 String asn = rec[1];
-                if (RandomUtil.isInteger(asn)) {
+                if (RandomUtils.isInteger(asn)) {
                     asnRanges.add(new GeoRange<>(start, end, Integer.parseInt(asn)));
                 }
 
