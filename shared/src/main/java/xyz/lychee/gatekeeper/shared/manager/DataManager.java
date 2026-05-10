@@ -1,146 +1,80 @@
 package xyz.lychee.gatekeeper.shared.manager;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import dev.dejvokep.boostedyaml.YamlDocument;
+import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonParserException;
+import com.grack.nanojson.JsonWriter;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Getter
-public class DataManager {
+public class DataManager extends AbstractManager implements Runnable {
     public static final DataManager INSTANCE = new DataManager();
 
     private final Map<Integer, Byte> addresses = new ConcurrentHashMap<>();
     private final Map<String, Byte> nicknames = new ConcurrentHashMap<>();
 
-    private final ExecutorService executor = Executors.newCachedThreadPool();
-    private HikariDataSource dataSource;
     private Logger logger;
-    private DatabaseType currentDbType;
+    private File dataFile;
 
-    public void loadDatabase(Gatekeeper<?> gatekeeper) {
+    @Override
+    public boolean load(Gatekeeper<?> gatekeeper) throws IOException, JsonParserException {
         this.logger = gatekeeper.logger();
-        YamlDocument yaml = ConfigManager.INSTANCE.getYaml();
+        this.dataFile = new File(gatekeeper.dataFolder(), "data.json");
 
-        String typeStr = yaml.getString("database.type", "H2").toUpperCase();
-
-        try {
-            this.currentDbType = DatabaseType.valueOf(typeStr);
-        } catch (IllegalArgumentException e) {
-            this.currentDbType = DatabaseType.H2;
-            this.logger.warning("Unknown database type, using H2 by default.");
+        if (!this.dataFile.exists()) {
+            this.dataFile.getParentFile().mkdirs();
+            this.dataFile.createNewFile();
         }
 
-        HikariConfig config = new HikariConfig();
-
-        if (this.currentDbType == DatabaseType.H2) {
-            String path = gatekeeper.dataFolder().toPath().resolve("database").toAbsolutePath().toString();
-
-            config.setJdbcUrl("jdbc:h2:" + path + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE");
-            config.setDriverClassName("org.h2.Driver");
-            config.setUsername("sa");
-            config.setPassword("");
-        } else {
-            String host = yaml.getString("database.host", "localhost");
-            int port = yaml.getInt("database.port", 3306);
-            String database = yaml.getString("database.database", "gatekeeper");
-            String username = yaml.getString("database.username", "root");
-            String password = yaml.getString("database.password", "");
-            boolean useSsl = yaml.getBoolean("database.useSSL", false);
-
-            String jdbcUrl = "jdbc:mariadb://" + host + ":" + port + "/" + database + "?useSSL=" + useSsl;
-
-            config.setJdbcUrl(jdbcUrl);
-            config.setDriverClassName("org.mariadb.jdbc.Driver");
-            config.setUsername(username);
-            config.setPassword(password);
-
-            config.addDataSourceProperty("cachePrepStmts", "true");
-            config.addDataSourceProperty("prepStmtCacheSize", "250");
-            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        }
-
-        config.setMaximumPoolSize(10);
-        config.setConnectionTimeout(5000);
-        config.setLeakDetectionThreshold(10000);
-
-        try {
-            this.dataSource = new HikariDataSource(config);
-            this.initTables();
-
-            this.loadAddresses();
-            this.loadNicknames();
-
-            this.logger.info("Connected to database: " + this.currentDbType.name());
-        } catch (Exception ex) {
-            this.logger.log(Level.SEVERE, "Failed to load database", ex);
-        }
+        this.loadFromFile();
+        return true;
     }
 
-    public void close() {
-        if (!this.executor.isShutdown()) {
-            this.executor.shutdown();
-        }
-
-        if (this.dataSource != null && !this.dataSource.isClosed()) {
-            this.dataSource.close();
-        }
+    @Override
+    public boolean unload(Gatekeeper<?> gatekeeper) {
+        return true;
     }
 
-    private void initTables() throws SQLException {
-        String[] queries = {
-                "CREATE TABLE IF NOT EXISTS addresses (address INT, access TINYINT DEFAULT 0, PRIMARY KEY (address));",
-                "CREATE TABLE IF NOT EXISTS nicknames (nickname VARCHAR(64), access TINYINT DEFAULT 0, PRIMARY KEY (nickname));"
-        };
+    @Override
+    public boolean reload(Gatekeeper<?> gatekeeper) {
+        return true;
+    }
 
-        try (Connection conn = this.dataSource.getConnection()) {
-            for (String query : queries) {
-                try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                    stmt.executeUpdate();
+    private void loadFromFile() throws IOException, JsonParserException {
+        try (FileReader reader = new FileReader(this.dataFile)) {
+            if (this.dataFile.length() == 0) return;
+
+            JsonObject json = JsonParser.object().from(reader);
+
+            JsonObject addressesObj = json.getObject("addresses");
+            if (addressesObj != null) {
+                for (Map.Entry<String, Object> entry : addressesObj.entrySet()) {
+                    try {
+                        this.addresses.put(Integer.parseInt(entry.getKey()), ((Number) entry.getValue()).byteValue());
+                    } catch (NumberFormatException ignored) {}
                 }
             }
-        }
-    }
 
-    public void loadAddresses() {
-        String query = "SELECT address, access FROM addresses";
-        try (Connection conn = this.dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                this.addresses.put(rs.getInt("address"), rs.getByte("access"));
+            JsonObject nicknamesObj = json.getObject("nicknames");
+            if (nicknamesObj != null) {
+                for (Map.Entry<String, Object> entry : nicknamesObj.entrySet()) {
+                    this.nicknames.put(entry.getKey(), ((Number) entry.getValue()).byteValue());
+                }
             }
-        } catch (SQLException ex) {
-            this.logger.log(Level.SEVERE, "Failed to load addresses database", ex);
-        }
-    }
-
-    public void loadNicknames() {
-        String query = "SELECT nickname, access FROM nicknames";
-        try (Connection conn = this.dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                this.nicknames.put(rs.getString("nickname"), rs.getByte("access"));
-            }
-        } catch (SQLException ex) {
-            this.logger.log(Level.SEVERE, "Failed to load nicknames database", ex);
         }
     }
 
@@ -157,54 +91,18 @@ public class DataManager {
 
     public void setAccess(int address, EnumAccess access) {
         this.addresses.put(address, access.getType());
-        this.updateAccess(address, access);
     }
 
     public void setAccess(String nickname, EnumAccess access) {
         this.nicknames.put(nickname, access.getType());
-        this.updateAccess(nickname, access);
-    }
-
-    private String getUpsertQuery(String table, String keyColumn, String valColumn) {
-        if (currentDbType == DatabaseType.H2 || currentDbType == DatabaseType.MYSQL) {
-            return String.format("INSERT INTO %s (%s, %s) VALUES (?, ?) ON DUPLICATE KEY UPDATE %s = VALUES(%s)",
-                    table, keyColumn, valColumn, valColumn, valColumn);
-        } else {
-            return String.format("INSERT INTO %s (%s, %s) VALUES (?, ?) ON CONFLICT(%s) DO UPDATE SET %s = excluded.%s",
-                    table, keyColumn, valColumn, keyColumn, valColumn, valColumn);
-        }
     }
 
     public void updateAccess(int ip, EnumAccess access) {
-        this.executor.execute(() -> {
-            String sql = getUpsertQuery("addresses", "address", "access");
-            try (Connection conn = this.dataSource.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-                pstmt.setInt(1, ip);
-                pstmt.setInt(2, access.getType());
-                pstmt.executeUpdate();
-
-            } catch (SQLException ex) {
-                this.logger.log(Level.SEVERE, "Błąd aktualizacji adresu IP", ex);
-            }
-        });
+        this.setAccess(ip, access);
     }
 
     public void updateAccess(String nickname, EnumAccess access) {
-        this.executor.execute(() -> {
-            String sql = getUpsertQuery("nicknames", "nickname", "access");
-            try (Connection conn = this.dataSource.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-                pstmt.setString(1, nickname);
-                pstmt.setInt(2, access.getType());
-                pstmt.executeUpdate();
-
-            } catch (SQLException ex) {
-                this.logger.log(Level.SEVERE, "Błąd aktualizacji nicku", ex);
-            }
-        });
+        this.setAccess(nickname, access);
     }
 
     public byte resolveAccess(String target) {
@@ -218,7 +116,16 @@ public class DataManager {
         return this.nicknames.getOrDefault(target, (byte) 0);
     }
 
-    public enum DatabaseType {
-        H2, MYSQL
+    @Override
+    public void run() {
+        JsonObject json = new JsonObject();
+        json.put("addresses", this.addresses);
+        json.put("nicknames", this.nicknames);
+
+        try {
+            Files.writeString(this.dataFile.toPath(), JsonWriter.string(json));
+        } catch (IOException ex) {
+            this.logger.log(Level.SEVERE, "Nie udało się zapisać pliku data.json", ex);
+        }
     }
 }
