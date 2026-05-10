@@ -63,6 +63,8 @@ public abstract class AbstractLang<T> {
 
     public abstract T color(String text, boolean prefix);
 
+    public abstract T hover(String text, String hoverText);
+
     public T message(String key, String... placeholders) {
         if (placeholders != null && placeholders.length > 0) {
             String message = this.getString(key);
