@@ -7,7 +7,9 @@ import java.io.*;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -18,7 +20,7 @@ public class BinaryGeoIPBuilder {
     public static final int VERSION = 1;
     private static final int MAX_GAP = 256;
 
-    public void downloadSource(File sourceCsv) throws IOException {
+    public void downloadSource(Path sourceCsv) throws IOException {
         URI uri = URI.create("https://github.com/iplocate/ip-address-databases/raw/refs/heads/main/ip-to-asn/ip-to-asn.csv.zip");
         try (InputStream is = uri.toURL().openStream();
              ZipInputStream zis = new ZipInputStream(is)) {
@@ -28,7 +30,7 @@ public class BinaryGeoIPBuilder {
             while ((entry = zis.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
 
-                try (FileOutputStream fos = new FileOutputStream(sourceCsv)) {
+                try (OutputStream fos = Files.newOutputStream(sourceCsv)) {
                     int len;
                     while ((len = zis.read(buffer)) > 0) {
                         fos.write(buffer, 0, len);
@@ -39,12 +41,12 @@ public class BinaryGeoIPBuilder {
         }
     }
 
-    public void buildDatabase(File sourceCsv, File output) throws IOException {
+    public void buildDatabase(Path sourceCsv, Path output) throws IOException {
         List<GeoRange<String>> countryRanges = new ArrayList<>(600000);
         List<GeoRange<Integer>> asnRanges = new ArrayList<>(600000);
 
         // network,asn,country_code,name,org,domain
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sourceCsv), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = Files.newBufferedReader(sourceCsv)) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) continue;
@@ -134,10 +136,8 @@ public class BinaryGeoIPBuilder {
         return new GeoRange<>(a.getStart(), newEnd, a.getValue());
     }
 
-    private void writeBinaryDatabase(File output, List<GeoRange<String>> countryRanges, List<GeoRange<Integer>> asnRanges) throws IOException {
-        try (RandomAccessFile file = new RandomAccessFile(output, "rw");
-             FileChannel channel = file.getChannel()) {
-
+    private void writeBinaryDatabase(Path output, List<GeoRange<String>> countryRanges, List<GeoRange<Integer>> asnRanges) throws IOException {
+        try (FileChannel channel = FileChannel.open(output, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             int headerSize = 16;
             int countryDataSize = countryRanges.size() * 10;
             int asnDataSize = asnRanges.size() * 12;
