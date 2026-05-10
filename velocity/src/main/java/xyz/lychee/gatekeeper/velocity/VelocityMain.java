@@ -14,15 +14,13 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
-import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
-import xyz.lychee.gatekeeper.shared.objects.CommandPlayer;
-import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
+import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.objects.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
@@ -34,8 +32,8 @@ public class VelocityMain implements Gatekeeper<Component> {
     private final File dataDirectory;
     private final LegacyComponentSerializer serializer;
     private final AbstractLang<Component> language;
-    private final String version;
     private final ColoredLogger logger;
+    private final PlatformData platformData;
 
     @Inject
     public VelocityMain(ProxyServer proxy, @DataDirectory Path dataDirectory, PluginContainer container) {
@@ -48,26 +46,20 @@ public class VelocityMain implements Gatekeeper<Component> {
                 .useUnusualXRepeatedCharacterHexFormat()
                 .build();
         this.language = new VelocityLang(this);
-        this.version = container.getDescription().getVersion().orElse("1.0.0");
         this.logger = new VelocityColoredLogger();
+        this.platformData = new PlatformData(
+                container.getDescription().getVersion().orElse("1.0.0"),
+                this.getProxy().getVersion().getVersion(),
+                this.getProxy().getVersion().getName(),
+                this.getProxy().getConfiguration().isOnlineMode()
+        );
     }
 
     @Subscribe
     public void onInit(ProxyInitializeEvent event) {
-        this.logger.sendHeader(this.version);
+        this.logger.sendHeader(this);
 
-        ConfigManager.INSTANCE.loadConfig(this);
-        DataManager.INSTANCE.loadDatabase(this);
-        ModuleManager.INSTANCE.loadChecks(this);
-        GeoipManager.INSTANCE.loadDatabases(this);
-        TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.loadUpdater(this);
-        MetricsManager.INSTANCE.loadMetrics(this, json -> {
-            json.put("playerAmount", this.proxy.getPlayerCount());
-            json.put("onlineMode", this.proxy.getConfiguration().isOnlineMode() ? 1 : 0);
-            json.put("bukkitVersion", this.proxy.getVersion().getVersion());
-            json.put("bukkitName", this.proxy.getVersion().getName());
-        });
+        this.loadManagers();
 
         this.language.loadLanguage();
 
@@ -80,8 +72,7 @@ public class VelocityMain implements Gatekeeper<Component> {
 
     @Subscribe
     public void onShutdown(ProxyShutdownEvent event) {
-        MetricsManager.INSTANCE.shutdown();
-        DataManager.INSTANCE.close();
+        this.unloadManagers();
     }
 
     @Override
@@ -100,8 +91,9 @@ public class VelocityMain implements Gatekeeper<Component> {
     }
 
     @Override
-    public String version() {
-        return this.version;
+    public PlatformData platformData() {
+        this.platformData.setPlayers(this.proxy.getPlayerCount());
+        return this.platformData;
     }
 
     @Override
@@ -170,6 +162,11 @@ public class VelocityMain implements Gatekeeper<Component> {
                         );
             }
             return deserialized;
+        }
+
+        @Override
+        public Component hover(String text, String hoverText) {
+            return this.color(text, false).hoverEvent(HoverEvent.showText(this.color(hoverText, false)));
         }
     }
 }

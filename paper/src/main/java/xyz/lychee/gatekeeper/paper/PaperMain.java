@@ -3,6 +3,7 @@ package xyz.lychee.gatekeeper.paper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
@@ -13,11 +14,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
-import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
-import xyz.lychee.gatekeeper.shared.objects.CommandPlayer;
-import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
+import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.objects.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
@@ -31,23 +29,13 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
             .build();
     private final AbstractLang<Component> language = new PaperLang(this);
     private final ColoredLogger logger = new ColoredLogger(Bukkit.getLogger());
+    private final PlatformData platformData = new PlatformData(this.getPluginMeta().getVersion(), Bukkit.getVersion(), Bukkit.getName(), Bukkit.getOnlineMode());
 
     @Override
     public void onEnable() {
-        this.logger.sendHeader(this.version());
+        this.logger.sendHeader(this);
 
-        ConfigManager.INSTANCE.loadConfig(this);
-        DataManager.INSTANCE.loadDatabase(this);
-        ModuleManager.INSTANCE.loadChecks(this);
-        GeoipManager.INSTANCE.loadDatabases(this);
-        TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.loadUpdater(this);
-        MetricsManager.INSTANCE.loadMetrics(this, json -> {
-            json.put("playerAmount", Bukkit.getOnlinePlayers().size());
-            json.put("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);
-            json.put("bukkitVersion", Bukkit.getVersion());
-            json.put("bukkitName", Bukkit.getName());
-        });
+        this.loadManagers();
 
         this.language.loadLanguage();
 
@@ -60,8 +48,7 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
     @Override
     public void onDisable() {
-        MetricsManager.INSTANCE.shutdown();
-        DataManager.INSTANCE.close();
+        this.unloadManagers();
     }
 
     @Override
@@ -80,8 +67,9 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
     }
 
     @Override
-    public String version() {
-        return this.getPluginMeta().getVersion();
+    public PlatformData platformData() {
+        this.platformData.setPlayers(Bukkit.getOnlinePlayers().size());
+        return this.platformData;
     }
 
     @Override
@@ -153,6 +141,11 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
                         );
             }
             return deserialized;
+        }
+
+        @Override
+        public Component hover(String text, String hoverText) {
+            return this.color(text, false).hoverEvent(HoverEvent.showText(this.color(hoverText, false)));
         }
     }
 }

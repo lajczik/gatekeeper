@@ -10,11 +10,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
-import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
-import xyz.lychee.gatekeeper.shared.objects.CommandPlayer;
-import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
+import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.objects.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
@@ -24,23 +21,13 @@ import java.util.regex.Pattern;
 public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listener {
     private final AbstractLang<String> language = new BukkitLang(this);
     private final ColoredLogger logger = new ColoredLogger(Bukkit.getLogger());
+    private final PlatformData platformData = new PlatformData(this.getDescription().getVersion(), Bukkit.getVersion(), Bukkit.getName(), Bukkit.getOnlineMode());
 
     @Override
     public void onEnable() {
-        this.logger.sendHeader(this.version());
+        this.logger.sendHeader(this);
 
-        ConfigManager.INSTANCE.loadConfig(this);
-        DataManager.INSTANCE.loadDatabase(this);
-        ModuleManager.INSTANCE.loadChecks(this);
-        GeoipManager.INSTANCE.loadDatabases(this);
-        TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.loadUpdater(this);
-        MetricsManager.INSTANCE.loadMetrics(this, json -> {
-            json.put("playerAmount", Bukkit.getOnlinePlayers().size());
-            json.put("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);
-            json.put("bukkitVersion", Bukkit.getVersion());
-            json.put("bukkitName", Bukkit.getName());
-        });
+        this.loadManagers();
 
         this.language.loadLanguage();
 
@@ -54,8 +41,7 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
 
     @Override
     public void onDisable() {
-        MetricsManager.INSTANCE.shutdown();
-        DataManager.INSTANCE.close();
+        this.unloadManagers();
     }
 
     @Override
@@ -74,8 +60,9 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
     }
 
     @Override
-    public String version() {
-        return this.getDescription().getVersion();
+    public PlatformData platformData() {
+        this.platformData.setPlayers(Bukkit.getOnlinePlayers().size());
+        return this.platformData;
     }
 
     @Override
@@ -145,6 +132,11 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
             }
 
             return colored;
+        }
+
+        @Override
+        public String hover(String component, String text) {
+            return component;
         }
 
         private String applyColors(String message) {

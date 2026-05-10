@@ -3,6 +3,7 @@ package xyz.lychee.gatekeeper.bungee;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Listener;
@@ -11,11 +12,8 @@ import net.md_5.bungee.api.plugin.PluginManager;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.*;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
-import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
-import xyz.lychee.gatekeeper.shared.objects.CommandPlayer;
-import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
+import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.objects.ColoredLogger;
 
 import java.io.File;
 import java.io.InputStream;
@@ -26,23 +24,13 @@ import java.util.regex.Pattern;
 public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Listener {
     private final AbstractLang<BaseComponent> language = new BungeeLang(this);
     private final ColoredLogger logger = new ColoredLogger(this.getProxy().getLogger());
+    private final PlatformData platformData = new PlatformData(this.getDescription().getVersion(), this.getProxy().getVersion(), this.getProxy().getName(), this.getProxy().getConfig().isOnlineMode());
 
     @Override
     public void onEnable() {
-        this.logger.sendHeader(this.version());
+        this.logger.sendHeader(this);
 
-        ConfigManager.INSTANCE.loadConfig(this);
-        DataManager.INSTANCE.loadDatabase(this);
-        ModuleManager.INSTANCE.loadChecks(this);
-        GeoipManager.INSTANCE.loadDatabases(this);
-        TaskManager.INSTANCE.loadTasks(this);
-        UpdaterManager.INSTANCE.loadUpdater(this);
-        MetricsManager.INSTANCE.loadMetrics(this, json -> {
-            json.put("playerAmount", this.getProxy().getOnlineCount());
-            json.put("onlineMode", this.getProxy().getConfig().isOnlineMode() ? 1 : 0);
-            json.put("bukkitVersion", this.getProxy().getVersion());
-            json.put("bukkitName", this.getProxy().getName());
-        });
+        this.loadManagers();
 
         this.language.loadLanguage();
 
@@ -53,8 +41,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
 
     @Override
     public void onDisable() {
-        MetricsManager.INSTANCE.shutdown();
-        DataManager.INSTANCE.close();
+        this.unloadManagers();
     }
 
     @Override
@@ -73,8 +60,9 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
     }
 
     @Override
-    public String version() {
-        return this.getDescription().getVersion();
+    public PlatformData platformData() {
+        this.platformData.setPlayers(this.getProxy().getOnlineCount());
+        return this.platformData;
     }
 
     @Override
@@ -181,6 +169,18 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
                 }
                 return root;
             }
+        }
+
+        @Override
+        public BaseComponent hover(String text, String hoverText) {
+            BaseComponent component = this.color(text, false);
+            component.setHoverEvent(
+                    new HoverEvent(
+                            HoverEvent.Action.SHOW_TEXT,
+                            new BaseComponent[] { this.color(hoverText, false) }
+                    )
+            );
+            return component;
         }
 
         private String applyColors(String message) {
