@@ -3,6 +3,7 @@ package xyz.lychee.gatekeeper.shared.objects;
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
+import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.charts.CustomChart;
 import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
@@ -16,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class MetricsBase {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
@@ -34,8 +34,7 @@ public class MetricsBase {
     private final String platform;
     private final String serverUuid;
     private final int serviceId;
-    private final String version;
-    private final Consumer<JsonObject> platformDataConsumer;
+    private final Gatekeeper<?> plugin;
 
     private final Set<CustomChart> customCharts = new HashSet<>();
 
@@ -43,19 +42,13 @@ public class MetricsBase {
             String platform,
             String serverUuid,
             int serviceId,
-            String version,
-            Consumer<JsonObject> platformDataConsumer) {
+            Gatekeeper<?> plugin) {
         this.platform = platform;
         this.serverUuid = serverUuid;
         this.serviceId = serviceId;
-        this.version = version;
-        this.platformDataConsumer = platformDataConsumer;
+        this.plugin = plugin;
 
         startSubmitting();
-
-        JsonObject platformData = new JsonObject();
-        this.platformDataConsumer.accept(platformData);
-        System.out.println(platformData);
     }
 
     public void addCustomChart(CustomChart chart) {
@@ -83,8 +76,14 @@ public class MetricsBase {
     }
 
     private void submitData() {
+        PlatformData platformData = this.plugin.platformData();
+
         JsonObject baseJson = new JsonObject();
-        this.platformDataConsumer.accept(baseJson);
+        baseJson.put("playerAmount", platformData.getPlayers());
+        baseJson.put("onlineMode", platformData.isOnlineMode() ? 1 : 0);
+        baseJson.put("bukkitVersion", platformData.getVersion());
+        baseJson.put("bukkitName", platformData.getName());
+
         baseJson.put("javaVersion", System.getProperty("java.version"));
         baseJson.put("osName", System.getProperty("os.name"));
         baseJson.put("osArch", System.getProperty("os.arch"));
@@ -93,7 +92,7 @@ public class MetricsBase {
 
         JsonObject serviceJson = new JsonObject();
         serviceJson.put("id", this.serviceId);
-        serviceJson.put("pluginVersion", this.version);
+        serviceJson.put("pluginVersion", platformData.getPluginVersion());
         JsonArray chartsJson = new JsonArray();
         for (CustomChart chart : this.customCharts) {
             chartsJson.add(chart.getRequestJsonObject());

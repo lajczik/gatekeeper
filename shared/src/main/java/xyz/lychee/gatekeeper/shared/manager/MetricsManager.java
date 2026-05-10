@@ -4,42 +4,53 @@ import com.grack.nanojson.JsonObject;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.charts.CustomChart;
+import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.MetricsBase;
 
 import java.io.IOException;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public class MetricsManager {
+public class MetricsManager extends AbstractManager {
     public static final MetricsManager INSTANCE = new MetricsManager();
     private MetricsBase metricsBase;
 
-    public void loadMetrics(Gatekeeper<?> plugin, Consumer<JsonObject> platformDataConsumer) {
+    @Override
+    public boolean load(Gatekeeper<?> plugin) {
         YamlDocument yaml = ConfigManager.INSTANCE.getYaml();
-        if (!yaml.getBoolean("enabled", true)) return;
+        if (!yaml.getBoolean("enabled", true)) return true;
 
         String uuid;
-        if (!yaml.contains("bStats.uuid")) {
+        if (!yaml.contains("main.bStats.uuid")) {
             uuid = UUID.randomUUID().toString();
-            yaml.set("bStats.uuid", uuid);
+            yaml.set("main.bStats.uuid", uuid);
             try {
                 yaml.save();
             } catch (IOException ignored) {}
         } else {
-            uuid = yaml.getString("bStats.uuid");
+            uuid = yaml.getString("main.bStats.uuid");
         }
 
         this.metricsBase = new MetricsBase(
                 "bukkit",
                 uuid,
                 27416,
-                plugin.version(),
-                platformDataConsumer
+                plugin
         );
+        return true;
     }
 
-    public void shutdown() {
-        metricsBase.shutdown();
+    @Override
+    public boolean unload(Gatekeeper<?> plugin) {
+        if (this.metricsBase != null) {
+            this.metricsBase.shutdown();
+        }
+        return true;
+    }
+
+    @Override
+    public boolean reload(Gatekeeper<?> gatekeeper) {
+        return true;
     }
 
     public void addCustomChart(CustomChart chart) {

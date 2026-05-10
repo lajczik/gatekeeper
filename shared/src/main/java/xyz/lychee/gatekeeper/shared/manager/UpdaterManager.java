@@ -6,6 +6,7 @@ import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 @Getter
-public class UpdaterManager implements Runnable {
+public class UpdaterManager extends AbstractManager implements Runnable {
     public static final UpdaterManager INSTANCE = new UpdaterManager();
     private final VersionComparator comparator = new VersionComparator();
     private int compared = 0;
@@ -26,10 +27,22 @@ public class UpdaterManager implements Runnable {
     private boolean updater;
     private Gatekeeper<?> plugin;
 
-    public void loadUpdater(Gatekeeper<?> plugin) {
-        this.updater = ConfigManager.INSTANCE.getYaml().getBoolean("updater");
-        this.currentVersion = plugin.version().trim();
+    @Override
+    public boolean load(Gatekeeper<?> plugin) {
+        this.updater = ConfigManager.INSTANCE.getYaml().getBoolean("main.updater");
+        this.currentVersion = plugin.platformData().getPluginVersion().trim();
         this.plugin = plugin;
+        return true;
+    }
+
+    @Override
+    public boolean unload(Gatekeeper<?> plugin) {
+        return true;
+    }
+
+    @Override
+    public boolean reload(Gatekeeper<?> gatekeeper) {
+        return true;
     }
 
     private int calculateBuildsBehind(List<String> versions) {
