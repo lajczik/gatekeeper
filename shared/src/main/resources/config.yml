@@ -1,28 +1,126 @@
-prefix: "&#54DAF4ɢ&#54CCEDᴀ&#54BEE6ᴛ&#54B1DFᴇ&#54A3D8ᴋ&#5495D2ᴇ&#5487CBᴇ&#547AC4ᴘ&#546CBDᴇ&#545EB6ʀ"
+#░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+#░░██████╗░░█████╗░████████╗███████╗░░██╗░░██╗███████╗███████╗██████╗ ███████╗██████╗░░
+#░██╔════╝░██╔══██╗╚══██╔══╝██╔════╝░░██║░██╔╝██╔════╝██╔════╝██╔══██╗██╔════╝██╔══██╗░
+#░██║░░███╗███████║░░░██║░░░█████╗░░░░█████╔╝░█████╗░░█████╗░░██████╔╝█████╗░░██████╔╝░
+#░██║░░░██║██╔══██║░░░██║░░░██╔══╝░░░░██╔═██╗░██╔══╝░░██╔══╝░░██╔═══╝░██╔══╝░░██╔══██╗░
+#░╚██████╔╝██║░░██║░░░██║░░░███████╗░░██║░░██╗███████╗███████╗██║░░░░░███████╗██║░░██║░
+#░░╚═════╝░╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░░╚═╝░░╚═╝╚══════╝╚══════╝╚═╝░░░░░╚══════╝╚═╝░░╚═╝░
+#░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-updater: true
+# Some of the options below require a server restart or plugin reload.
+main:
+  prefix: "&#54DAF4ɢ&#54CCEDᴀ&#54BEE6ᴛ&#54B1DFᴇ&#54A3D8ᴋ&#5495D2ᴇ&#5487CBᴇ&#547AC4ᴘ&#546CBDᴇ&#545EB6ʀ"
+  # Displays GateKeeper version info on hover.
+  prefix_hover: true
 
-bStats:
-  enabled: true
+  updater: true
 
-database:
-  # Database type. Available options: H2 (local), MYSQL
-  type: H2
+  bStats:
+    enabled: true
 
-  # === Options for remote databases (ignored when type: H2) ===
+  command:
+    permission: "gatekeeper.command"
+    aliases:
+      - gk
+      - antibot
+      - antivpn
+      - novpn
 
-  # Database server address
-  host: "localhost"
+  auto_updater:
+    enabled: true
+    interval: 12
 
-  # Database server port (default for MySQL/MariaDB is 3306)
-  port: 3306
+    # Asn sources used for AsnFilter module
+    asn_sources:
+      - "https://raw.githubusercontent.com/bountyyfi/bad-asn-list/refs/heads/main/all.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/top_100.txt"
+      - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/datacenter/ASN.txt"
+      - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/vpn/ASN.txt"
+      - "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/VPN%20Providers/ASN.txt"
+      - "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/VPS%20Providers/ASN.txt"
 
-  # Name of the database to connect to (must already exist)
-  database: "gatekeeper_db"
-
-  # Database credentials
-  username: "db_user"
-  password: "secure_password"
-
-  # Whether to use SSL (recommended for remote connections)
-  useSSL: false
+    # Proxy sources used for IpsFilter module
+    proxy_sources:
+      - "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
+      - "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt"
+      - "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt"
+      - "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt"
+      - "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks4.txt"
+      - "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt"
+      - "https://raw.githubusercontent.com/X4BNet/lists_vpn/main/output/vpn/ipv4.txt"
+      - "https://raw.githubusercontent.com/X4BNet/lists_vpn/main/output/datacenter/ipv4.txt"
+      - "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level1.netset"
+      - "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/tor_exits.ipset"
+      - "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/stopforumspam_7d.ipset"
+      - "https://cinsscore.com/list/ci-badguys.txt"
+      - "https://lists.blocklist.de/lists/all.txt"
+      - "https://blocklist.greensnow.co/greensnow.txt"
+      - "https://check.torproject.org/torbulkexitlist?ip=1.1.1.1"
+      - "https://tcpshield.com/blocklist.txt"
+      - "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt"
+      - "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt"
+      - "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt"
+      - "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies.json"
+      - "https://raw.githubusercontent.com/Coocoobau/vpn-ip-lists/main/nordvpn-ips.txt"
+      - "https://raw.githubusercontent.com/Coocoobau/vpn-ip-lists/main/protonvpn-ips.txt"
+      - "https://raw.githubusercontent.com/Coocoobau/vpn-ip-lists/main/windscribevpn-ips.txt"
+      - "https://raw.githubusercontent.com/scriptzteam/ProtonVPN-VPN-IPs/main/exit_ips.txt"
+      - "https://raw.githubusercontent.com/scriptzteam/ProtonVPN-VPN-IPs/main/entry_ips.txt"
+      - "https://raw.githubusercontent.com/officialputuid/KangProxy/main/http/http.txt"
+      - "https://raw.githubusercontent.com/officialputuid/KangProxy/main/https/https.txt"
+      - "https://raw.githubusercontent.com/officialputuid/KangProxy/main/socks4/socks4.txt"
+      - "https://raw.githubusercontent.com/officialputuid/KangProxy/main/socks5/socks5.txt"
+      - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt"
+      - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/http/data.txt"
+      - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/https/data.txt"
+      - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks4/data.txt"
+      - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks5/data.txt"
+      - "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt"
+      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/ips-list.txt"
+      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt"
+      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks4.txt"
+      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks5.txt"
+      - "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies.txt"
+      - "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/proxy.txt"
+      - "https://raw.githubusercontent.com/dpangestuw/Free-Proxy/main/allive.txt"
+      - "https://raw.githubusercontent.com/dpangestuw/Free-Proxy/main/http_proxies.txt"
+      - "https://raw.githubusercontent.com/dpangestuw/Free-Proxy/main/socks4_proxies.txt"
+      - "https://raw.githubusercontent.com/dpangestuw/Free-Proxy/main/socks5_proxies.txt"
+      - "https://vakhov.github.io/fresh-proxy-list/http.txt"
+      - "https://vakhov.github.io/fresh-proxy-list/https.txt"
+      - "https://vakhov.github.io/fresh-proxy-list/socks4.txt"
+      - "https://vakhov.github.io/fresh-proxy-list/socks5.txt"
+      - "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt"
+      - "https://raw.githubusercontent.com/almroot/proxylist/master/list.txt"
+      - "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/aproxy.txt"
+      - "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/hproxy.txt"
+      - "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http.txt"
+      - "https://raw.githubusercontent.com/proxy4parsing/proxy-list/main/http_old.txt"
+      - "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/http.txt"
+      - "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks4.txt"
+      - "https://raw.githubusercontent.com/MuRongPIG/Proxy-Master/main/socks5.txt"
+      - "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt"
+      - "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/https_proxies.txt"
+      - "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/socks4_proxies.txt"
+      - "https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/socks5_proxies.txt"
+      - "https://raw.githubusercontent.com/elliottophellia/yakumo/master/results/socks4/global/socks4_checked.txt"
+      - "https://raw.githubusercontent.com/elliottophellia/yakumo/master/results/socks5/global/socks5_checked.txt"
+      - "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=ipport&format=text"
+      - "https://openproxylist.xyz/http.txt"
+      - "https://openproxylist.xyz/socks4.txt"
+      - "https://openproxylist.xyz/socks5.txt"
+      - "https://proxyspace.pro/http.txt"
+      - "https://proxyspace.pro/https.txt"
+      - "https://proxyspace.pro/socks4.txt"
+      - "https://proxyspace.pro/socks5.txt"
+      - "https://multiproxy.org/txt_all/proxy.txt"
+      - "https://rootjazz.com/proxies/proxies.txt"
+      - "http://az0-vpnip-public.oooninja.com/ip.txt"
+      - "https://raw.githubusercontent.com/theriturajps/proxy-list/main/proxies.txt"
+      - "https://raw.githubusercontent.com/thenasty1337/free-proxy-list/main/data/latest/proxies.txt"
+      - "https://raw.githubusercontent.com/thenasty1337/free-proxy-list/main/data/latest/types/http/proxies.txt"
+      - "https://raw.githubusercontent.com/thenasty1337/free-proxy-list/main/data/latest/types/socks4/proxies.txt"
+      - "https://raw.githubusercontent.com/thenasty1337/free-proxy-list/main/data/latest/types/socks5/proxies.txt"
+      - "https://raw.githubusercontent.com/0x1881/Free-Proxy-List/main/http.txt"
+      - "https://raw.githubusercontent.com/0x1881/Free-Proxy-List/main/https.txt"
+      - "https://raw.githubusercontent.com/0x1881/Free-Proxy-List/main/socks4.txt"

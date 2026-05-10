@@ -1,129 +1,211 @@
 package xyz.lychee.gatekeeper.shared.manager;
 
+import dev.dejvokep.boostedyaml.YamlDocument;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.objects.GeoRange;
+import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPBuilder;
 import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPDatabase;
+import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.SerializeUtils;
+import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Getter
-public class GeoipManager implements Runnable {
+public class GeoipManager extends AbstractManager implements Runnable {
     public static final GeoipManager INSTANCE = new GeoipManager();
-    private final Map<Integer, String> countryCache = new ConcurrentHashMap<>();
-    private final Map<Integer, Integer> asnCache = new ConcurrentHashMap<>();
+    private static final Pattern ASN_PATTERN = Pattern.compile("\\d{4,6}");
+    private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
+    private final ExecutorService executor = Executors.newFixedThreadPool(2);
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .executor(this.executor)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+    private final Set<Integer> downloadedAsns = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> downloadedProxies = ConcurrentHashMap.newKeySet();
+    private final List<String> asnSource = new ArrayList<>();
+    private final List<String> proxySources = new ArrayList<>();
     private final BinaryGeoIPDatabase database = new BinaryGeoIPDatabase();
-    private Gatekeeper<?> gatekeeper;
-    private List<GeoRange<String>> countryRangeCache = Collections.emptyList();
-    private List<GeoRange<Integer>> asnRangeCache = Collections.emptyList();
+    private boolean firstLoad = true;
+    private Logger logger;
+    private Path geoDataPath;
+    private Path asnDataPath;
+    private Path proxyDataPath;
 
-    public void loadDatabases(Gatekeeper<?> gatekeeper) {
-        this.gatekeeper = gatekeeper;
-        File dataFile = new File(gatekeeper.dataFolder(), "geodata.ldb");
+    @Override
+    public boolean load(Gatekeeper<?> plugin) throws IOException {
+        this.logger = plugin.logger();
+        this.geoDataPath = new File(plugin.dataFolder(), "geodata.ldb").toPath();
+        this.asnDataPath = new File(plugin.dataFolder(), "asn_data.bin").toPath();
+        this.proxyDataPath = new File(plugin.dataFolder(), "proxy_data.bin").toPath();
 
-        try {
-            if (this.needUpdate(dataFile)) {
-                this.gatekeeper.logger().info("Downloading GeoIP database...");
+        YamlDocument yaml = ConfigManager.INSTANCE.getYaml();
+        this.asnSource.clear();
+        this.asnSource.addAll(yaml.getStringList("main.auto_updater.asn_sources"));
+        Collections.shuffle(this.asnSource, RandomUtils.RANDOM);
 
-                File sourceCsv = new File(gatekeeper.dataFolder(), "temp_geodata.csv");
-                BinaryGeoIPBuilder builder = new BinaryGeoIPBuilder();
-                builder.downloadSource(sourceCsv);
-                builder.buildDatabase(sourceCsv, dataFile);
+        this.proxySources.clear();
+        this.proxySources.addAll(yaml.getStringList("main.auto_updater.proxy_sources"));
+        Collections.shuffle(this.proxySources, RandomUtils.RANDOM);
 
-                sourceCsv.delete();
-            } else {
-                this.gatekeeper.logger().info("Using existing GeoIP database: " + dataFile.getName());
-            }
+        this.download();
+        this.firstLoad = false;
 
-            this.database.load(dataFile);
-
-            cacheAllRanges();
-
-            this.gatekeeper.logger().info("GeoIP database has been loaded successfully!");
-        } catch (IOException ex) {
-            this.gatekeeper.logger().log(Level.SEVERE, "GeoIP files could not be loaded.", ex);
-            clearCache();
-        }
+        return true;
     }
 
-    private boolean needUpdate(File dataFile) {
-        if (!dataFile.exists()) {
+    @Override
+    public boolean unload(Gatekeeper<?> gatekeeper) {
+        this.asnSource.clear();
+        this.proxySources.clear();
+        return true;
+    }
+
+    @Override
+    public boolean reload(Gatekeeper<?> gatekeeper) {
+        return true;
+    }
+
+    private boolean needUpdate(Path dataFile) throws IOException {
+        if (Files.notExists(dataFile)) {
             return true;
         }
 
-        long fileAgeInMillis = System.currentTimeMillis() - dataFile.lastModified();
-        long updateIntervalMillis = 11 * 60 * 60 * 1000;
-
-        return fileAgeInMillis > updateIntervalMillis;
-    }
-
-    private void cacheAllRanges() {
-        clearCache();
-
-        try {
-            this.countryRangeCache = this.database.getAllCountryRanges();
-            this.asnRangeCache = this.database.getAllASNRanges();
-
-            this.gatekeeper.logger().info("Loaded " + this.countryRangeCache.size() + " country and " + this.asnRangeCache.size() + " asn ranges!");
-        } catch (Exception ex) {
-            this.gatekeeper.logger().log(Level.WARNING, "Failed to load GeoIP ranges", ex);
-            clearCache();
-        }
-    }
-
-    public @NotNull String getCountryCode(int addressData) {
-        return this.getFromCacheOrSearch(addressData, countryCache, countryRangeCache, BinaryGeoIPDatabase.UNKNOWN_COUNTRY);
-    }
-
-    public @NotNull Integer getAsnCode(int addressData) {
-        return this.getFromCacheOrSearch(addressData, asnCache, asnRangeCache, BinaryGeoIPDatabase.UNKNOWN_ASN);
-    }
-
-    private <V> V getFromCacheOrSearch(int ip, Map<Integer, V> cache, List<GeoRange<V>> ranges, V defaultValue) {
-        V cached = cache.get(ip);
-        if (cached != null) {
-            return cached;
-        }
-
-        int low = 0;
-        int high = ranges.size() - 1;
-
-        while (low <= high) {
-            int mid = (low + high) >>> 1;
-            GeoRange<V> midVal = ranges.get(mid);
-
-            if (Integer.compareUnsigned(ip, midVal.getStart()) < 0) {
-                high = mid - 1;
-            } else if (Integer.compareUnsigned(ip, midVal.getEnd()) > 0) {
-                low = mid + 1;
-            } else {
-                V foundValue = midVal.getValue();
-                cache.put(ip, foundValue);
-                return foundValue;
-            }
-        }
-
-        cache.put(ip, defaultValue);
-        return defaultValue;
-    }
-
-    public void clearCache() {
-        countryCache.clear();
-        asnCache.clear();
+        Instant updateThreshold = Instant.now().minus(12, ChronoUnit.HOURS);
+        Instant fileModified = Files.getLastModifiedTime(dataFile).toInstant();
+        return fileModified.compareTo(updateThreshold) < 0;
     }
 
     @Override
     public void run() {
-        if (this.gatekeeper != null) {
-            this.loadDatabases(this.gatekeeper);
+
+    }
+
+    public void download() throws IOException {
+        boolean geoNeedUpdate = this.needUpdate(this.geoDataPath);
+        if (geoNeedUpdate || this.firstLoad) {
+            TimingUtil t = TimingUtil.startNew();
+            if (geoNeedUpdate) {
+                Path sourceCsv = this.geoDataPath.getParent().resolve("temp_geodata.csv");
+                BinaryGeoIPBuilder builder = new BinaryGeoIPBuilder();
+                builder.downloadSource(sourceCsv);
+                builder.buildDatabase(sourceCsv, this.geoDataPath);
+
+                Files.delete(sourceCsv);
+            }
+            this.database.load(this.geoDataPath);
+            this.logger.info(" &8• &rLoaded " + this.database.getCountryRangeCache().size() + " country and " + this.database.getAsnRangeCache().size() + " asn ranges in "+t.stop().getExecutingTime()+"ms!");
+        }
+
+        this.downloadFromSource(
+                " &8• &rDownloading suspicious ASNs from "+this.proxySources.size()+" sources...",
+                " &8• &rDownloaded %amount% suspicious ASNs in %time%!",
+                " &8• &rLoaded %amount% suspicious ASNs in %time%!",
+                this.asnSource,
+                this.downloadedAsns,
+                this.asnDataPath,
+                ASN_PATTERN,
+                str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null
+        );
+
+        this.downloadFromSource(
+                " &8• &rDownloading suspicious IPs from "+this.proxySources.size()+" sources...",
+                " &8• &rDownloaded %amount% suspicious IPs in %time%ms!",
+                " &8• &rLoaded %amount% suspicious IPs in %time%ms!",
+                this.proxySources,
+                this.downloadedProxies,
+                this.proxyDataPath,
+                IP_PATTERN,
+                str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null
+        );
+    }
+
+    public void downloadFromSource(
+            String downloadingLog,
+            String downloadedLog,
+            String loadedLog,
+            List<String> sources,
+            Set<Integer> outputSet,
+            Path outputPath,
+            Pattern pattern,
+            Function<String, Integer> parser
+    ) throws IOException {
+        TimingUtil t = TimingUtil.startNew();
+        if (this.needUpdate(outputPath)) {
+            this.logger.info(downloadingLog);
+
+            CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+
+            Executor delayed = CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, this.executor);
+
+            for (String source : sources) {
+                future = future.thenCompose(v -> {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(source))
+                            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
+                            .GET()
+                            .build();
+
+                    CompletableFuture<HttpResponse<String>> responseFuture =
+                            this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+
+                    return responseFuture
+                            .exceptionally(err -> null)
+                            .thenAcceptAsync(response -> {
+                                if (response != null && response.statusCode() == 200) {
+                                    Matcher matcher = pattern.matcher(response.body());
+                                    while (matcher.find()) {
+                                        String group = matcher.group();
+                                        Integer parsed = parser.apply(group);
+                                        if (parsed != null) {
+                                            outputSet.add(parsed);
+                                        }
+                                    }
+                                }
+                            }, delayed);
+                });
+            }
+
+            future.thenRun(() -> {
+                byte[] serialized = SerializeUtils.serialize(outputSet);
+                try {
+                    Files.write(outputPath, serialized);
+                } catch (IOException ignored) {}
+
+                this.logger.info(
+                        downloadedLog
+                                .replace("%amount%", Integer.toString(outputSet.size()))
+                                .replace("%time%", Long.toString(t.stop().getExecutingTime()))
+                );
+            });
+        }
+        else {
+            SerializeUtils.deserialize(Files.readAllBytes(outputPath), outputSet);
+
+            this.logger.info(
+                    loadedLog
+                            .replace("%amount%", Integer.toString(outputSet.size()))
+                            .replace("%time%", Long.toString(t.stop().getExecutingTime()))
+            );
         }
     }
 }

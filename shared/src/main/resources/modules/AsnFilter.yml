@@ -7,17 +7,6 @@ kick:
   - "&#FF5555An error occurred while connecting to the server!"
   - "&#C7C7C7Your internet provider is blocked, make sure your VPN is turned off."
 values:
-  auto_update:
-    asn_pattern: "\\d{4,6}"
-    interval: 8
-    sources:
-      - "https://raw.githubusercontent.com/bountyyfi/bad-asn-list/refs/heads/main/all.txt"
-      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/top_100.txt"
-      - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/datacenter/ASN.txt"
-      - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/vpn/ASN.txt"
-      #- "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/VPN%20Providers/ASN.txt"
-      #- "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/VPS%20Providers/ASN.txt"
-
   # If true, blocks all ASNs on the list; if false, blocks all ASNs not listed.
   list_mode: true
   # List of ASNs (only numbers), you can obtain ASN code by ip on https://mxtoolbox.com/asn.aspx

@@ -23,7 +23,9 @@ public class GeoConnection {
         this.address = address;
         this.name = name;
         this.addressData = addressData;
-        this.country = GeoipManager.INSTANCE.getCountryCode(this.addressData);
-        this.asn = GeoipManager.INSTANCE.getAsnCode(this.addressData);
+
+        BinaryGeoIPDatabase database = GeoipManager.INSTANCE.getDatabase();
+        this.country = database.getCountryCode(this.addressData);
+        this.asn = database.getAsnCode(this.addressData);
     }
 }
