@@ -21,8 +21,7 @@ public class ReloadCommand<T> extends PermissibleCommand<T> {
     protected void handleExecution(CommandPlayer<T> player, String[] args) {
         AbstractLang<T> lang = this.getGatekeeper().language();
 
-        ConfigManager.INSTANCE.loadConfig(this.getGatekeeper());
-        ModuleManager.INSTANCE.reload();
+        this.getGatekeeper().reloadManagers();
         player.sendMessage(lang, "messages.reload.config");
 
         lang.loadLanguage();
