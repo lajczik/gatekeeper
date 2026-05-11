@@ -7,7 +7,6 @@ kick:
   - "&#FF5555An error occurred while connecting to the server!"
   - "&#C7C7C7Your internet provider is blocked, make sure your VPN is turned off."
 values:
-  threads: 4
   max_concurrent_checks: 30
   read_timeout: 1000
   connect_timeout: 500
