@@ -141,7 +141,7 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
 
         private String applyColors(String message) {
             Matcher matcher = this.hexPattern.matcher(message);
-            StringBuilder buffer = new StringBuilder();
+            StringBuffer buffer = new StringBuffer();
 
             while (matcher.find()) {
                 String hex = matcher.group(1);

@@ -185,7 +185,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
 
         private String applyColors(String message) {
             Matcher matcher = this.hexPattern.matcher(message);
-            StringBuilder builder = new StringBuilder();
+            StringBuffer builder = new StringBuffer();
 
             while (matcher.find()) {
                 String hex = matcher.group(1);
