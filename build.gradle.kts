@@ -9,6 +9,7 @@ version = "1.3"
 dependencies {
     implementation(project(":shared", "shadow"))
     implementation(project(":velocity", "shadow"))
+    implementation(project(":sponge", "shadow"))
     implementation(project(":bungee", "shadow"))
     implementation(project(":bukkit", "shadow"))
     implementation(project(":paper", "shadow"))
@@ -34,6 +35,7 @@ allprojects {
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://oss.sonatype.org/content/groups/public/")
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+        maven("https://repo.spongepowered.org/maven/")
         mavenLocal()
         mavenCentral()
     }
@@ -64,6 +66,9 @@ allprojects {
                 expand(rootProject.project.properties)
             }
             filesMatching("**/paper-plugin.yml") {
+                expand(rootProject.project.properties)
+            }
+            filesMatching("**/sponge_plugins.json") {
                 expand(rootProject.project.properties)
             }
 

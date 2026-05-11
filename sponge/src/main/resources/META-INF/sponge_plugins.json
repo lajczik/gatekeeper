@@ -1,0 +1,33 @@
+{
+  "loader": {
+    "name": "java_plain",
+    "version": "1.0"
+  },
+  "license": "MIT",
+  "plugins": [
+    {
+      "id": "gatekeeper",
+      "name": "gatekeeper",
+      "version": "${project.version}",
+      "entrypoint": "xyz.lychee.gatekeeper.sponge.SpongeMain",
+      "description": " ",
+      "links": {
+        "homepage": "https://modrinth.com/plugin/gatekeeper-mc",
+        "source": "https://github.com/lajczik/gatekeeper",
+        "issues": "https://github.com/lajczik/gatekeeper/issues"
+      },
+      "contributors": [
+        {
+          "name": "lajczik",
+          "description": "Developer"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "spongeapi",
+          "version": "12.0.0"
+        }
+      ]
+    }
+  ]
+}
