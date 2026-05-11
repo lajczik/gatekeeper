@@ -53,7 +53,9 @@ public class ModuleManager extends AbstractManager {
         for (AbstractModule module : this.allChecks) {
             try {
                 TimingUtil t = TimingUtil.startNew();
-                module.unload();
+                if (module.isLoaded()) {
+                    module.unload();
+                }
                 boolean success = module.loadAllConfig();
                 if (success) {
                     this.loadedChecks.add(module);

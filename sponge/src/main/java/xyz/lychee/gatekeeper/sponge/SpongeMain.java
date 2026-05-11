@@ -15,6 +15,7 @@ import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.Command;
 import org.spongepowered.api.command.CommandCause;
 import org.spongepowered.api.config.ConfigDir;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.event.lifecycle.StartedEngineEvent;
@@ -28,6 +29,7 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -132,24 +134,28 @@ public class SpongeMain implements Gatekeeper<Component> {
             @Override
             public void applyChange(String target, EnumAccess newAccess) {
                 BlacklistModule check = ModuleManager.INSTANCE.getCheck(BlacklistModule.class);
-                Object kickMessage = check.getKickMessage();
+                if (!(check.getKickMessage() instanceof Component)) return;
+
+                Component kickMessage = (Component) check.getKickMessage();
+                byte accessType = newAccess.getType();
+                ServerPlayer targetPlayer = getGame().server().player(target).orElse(null);
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
-                    DataManager.INSTANCE.setAccess(addressData, newAccess);
-                    if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {
-                        Component kickComp = LegacyComponentSerializer.legacyAmpersand().deserialize((String) kickMessage);
-                        Sponge.server().onlinePlayers().stream()
+                    DataManager.INSTANCE.getAddresses().put(addressData, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST) {
+                        getGame().server().onlinePlayers().stream()
                                 .filter(p -> AddressUtils.isIpv4Equal(p.connection().address().getAddress(), addressData))
-                                .forEach(p -> p.kick(kickComp));
+                                .forEach(p -> p.kick(kickMessage));
                     }
-                    return;
-                }
-
-                DataManager.INSTANCE.setAccess(target, newAccess);
-                if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {
-                    Component kickComp = LegacyComponentSerializer.legacyAmpersand().deserialize((String) kickMessage);
-                    Sponge.server().player(target).ifPresent(p -> p.kick(kickComp));
+                } else if (RandomUtils.isInteger(target) && targetPlayer == null) {
+                    int asn = Integer.parseInt(target);
+                    DataManager.INSTANCE.getAsns().put(asn, accessType);
+                } else {
+                    DataManager.INSTANCE.getNicknames().put(target, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST && targetPlayer != null) {
+                        targetPlayer.kick(kickMessage);
+                    }
                 }
             }
         };

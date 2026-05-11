@@ -18,6 +18,7 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -103,23 +104,24 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
                 if (!(check.getKickMessage() instanceof Component)) return;
 
                 Component kickMessage = (Component) check.getKickMessage();
+                byte accessType = newAccess.getType();
+                Player targetPlayer = Bukkit.getPlayer(target);
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
-                    DataManager.INSTANCE.setAccess(addressData, newAccess);
+                    DataManager.INSTANCE.getAddresses().put(addressData, accessType);
                     if (newAccess == EnumAccess.BLACKLIST) {
                         Bukkit.getOnlinePlayers().stream()
                                 .filter(player -> AddressUtils.isIpv4Equal(player.getAddress().getAddress(), addressData))
                                 .forEach(player -> player.kick(kickMessage));
                     }
-                    return;
-                }
-
-                DataManager.INSTANCE.setAccess(target, newAccess);
-                if (newAccess == EnumAccess.BLACKLIST) {
-                    Player player = Bukkit.getPlayer(target);
-                    if (player != null) {
-                        player.kick(kickMessage);
+                } else if (RandomUtils.isInteger(target) && targetPlayer == null) {
+                    int asn = Integer.parseInt(target);
+                    DataManager.INSTANCE.getAsns().put(asn, accessType);
+                } else {
+                    DataManager.INSTANCE.getNicknames().put(target, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST && targetPlayer != null) {
+                        targetPlayer.kick(kickMessage);
                     }
                 }
             }

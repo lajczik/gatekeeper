@@ -14,6 +14,7 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -93,25 +94,27 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
             @Override
             public void applyChange(String target, EnumAccess newAccess) {
                 BlacklistModule check = ModuleManager.INSTANCE.getCheck(BlacklistModule.class);
-                Object kickMessage = check.getKickMessage();
+                if (!(check.getKickMessage() instanceof String)) return;
+
+                String kickMessage = (String) check.getKickMessage();
+                byte accessType = newAccess.getType();
+                Player targetPlayer = Bukkit.getPlayer(target);
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
-                    DataManager.INSTANCE.setAccess(addressData, newAccess);
-                    if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {
-                        String str = (String) kickMessage;
+                    DataManager.INSTANCE.getAddresses().put(addressData, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST) {
                         Bukkit.getOnlinePlayers().stream()
                                 .filter(player -> AddressUtils.isIpv4Equal(player.getAddress().getAddress(), addressData))
-                                .forEach(player -> player.kickPlayer(str));
+                                .forEach(player -> player.kickPlayer(kickMessage));
                     }
-                    return;
-                }
-
-                DataManager.INSTANCE.setAccess(target, newAccess);
-                if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof String) {
-                    Player player = Bukkit.getPlayer(target);
-                    if (player != null) {
-                        player.kickPlayer((String) kickMessage);
+                } else if (RandomUtils.isInteger(target) && targetPlayer == null) {
+                    int asn = Integer.parseInt(target);
+                    DataManager.INSTANCE.getAsns().put(asn, accessType);
+                } else {
+                    DataManager.INSTANCE.getNicknames().put(target, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST && targetPlayer != null) {
+                        targetPlayer.kickPlayer(kickMessage);
                     }
                 }
             }

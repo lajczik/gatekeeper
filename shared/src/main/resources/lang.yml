@@ -3,9 +3,9 @@ messages:
 
   main_usage:
     - '%prefix% &8• &7Available commands:'
-    - ' &8» &f/gatekeeper whitelist add/remove (address/name) &8- &7Adds/Removes a user or address to/from the whitelist;'
-    - ' &8» &f/gatekeeper blacklist add/remove (address/name) &8- &7Adds/Removes a user or address to/from the blacklist;'
-    - ' &8» &f/gatekeeper info (address/name) &8- &7Shows information about an address or name.'
+    - ' &8» &f/gatekeeper whitelist add/remove (address/name/asn) &8- &7Adds/Removes a user or address to/from the whitelist'
+    - ' &8» &f/gatekeeper blacklist add/remove (address/name/asn) &8- &7Adds/Removes a user or address to/from the blacklist'
+    - ' &8» &f/gatekeeper info (address/name/asn) &8- &7Shows information about an address or name'
     - ' &8» &f/gatekeeper reload &8- &7Reloads lang and config files'
 
   updater:

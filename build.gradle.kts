@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "xyz.lychee.gatekeeper"
-version = "1.3"
+version = "1.4"
 
 dependencies {
     implementation(project(":shared", "shadow"))

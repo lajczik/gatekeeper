@@ -9,6 +9,7 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
@@ -23,6 +24,7 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -127,21 +129,25 @@ public class VelocityMain implements Gatekeeper<Component> {
                 if (!(check.getKickMessage() instanceof Component)) return;
 
                 Component kickMessage = (Component) check.getKickMessage();
+                byte accessType = newAccess.getType();
+                Player targetPlayer = getProxy().getPlayer(target).orElse(null);
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
-                    DataManager.INSTANCE.setAccess(addressData, newAccess);
+                    DataManager.INSTANCE.getAddresses().put(addressData, accessType);
                     if (newAccess == EnumAccess.BLACKLIST) {
-                        VelocityMain.this.proxy.getAllPlayers().stream()
+                        getProxy().getAllPlayers().stream()
                                 .filter(player -> AddressUtils.isIpv4Equal(player.getRemoteAddress().getAddress(), addressData))
                                 .forEach(player -> player.disconnect(kickMessage));
                     }
-                    return;
-                }
-
-                DataManager.INSTANCE.setAccess(target, newAccess);
-                if (newAccess == EnumAccess.BLACKLIST) {
-                    VelocityMain.this.proxy.getPlayer(target).ifPresent(player -> player.disconnect(kickMessage));
+                } else if (RandomUtils.isInteger(target) && targetPlayer == null) {
+                    int asn = Integer.parseInt(target);
+                    DataManager.INSTANCE.getAsns().put(asn, accessType);
+                } else {
+                    DataManager.INSTANCE.getNicknames().put(target, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST && targetPlayer != null) {
+                        targetPlayer.disconnect(kickMessage);
+                    }
                 }
             }
         };

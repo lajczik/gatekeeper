@@ -16,6 +16,7 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -93,26 +94,27 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
             @Override
             public void applyChange(String target, EnumAccess newAccess) {
                 BlacklistModule check = ModuleManager.INSTANCE.getCheck(BlacklistModule.class);
-                Object kickMessage = check.getKickMessage();
+                if (!(check.getKickMessage() instanceof BaseComponent)) return;
+
+                BaseComponent kickMessage = (BaseComponent) check.getKickMessage();
+                byte accessType = newAccess.getType();
+                ProxiedPlayer targetPlayer = getProxy().getPlayer(target);
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
-                    DataManager.INSTANCE.setAccess(addressData, newAccess);
-                    if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof BaseComponent) {
-                        BaseComponent baseComponent = (BaseComponent) kickMessage;
+                    DataManager.INSTANCE.getAddresses().put(addressData, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST) {
                         getProxy().getPlayers().stream()
                                 .filter(player -> AddressUtils.isIpv4Equal(((InetSocketAddress) player.getSocketAddress()).getAddress(), addressData))
-                                .forEach(player -> player.disconnect(baseComponent));
+                                .forEach(player -> player.disconnect(kickMessage));
                     }
-                    return;
-                }
-
-                DataManager.INSTANCE.setAccess(target, newAccess);
-                if (newAccess == EnumAccess.BLACKLIST && kickMessage instanceof BaseComponent) {
-                    ProxiedPlayer player = getProxy().getPlayer(target);
-                    if (player != null) {
-                        BaseComponent baseComponent = (BaseComponent) kickMessage;
-                        player.disconnect(baseComponent);
+                } else if (RandomUtils.isInteger(target) && targetPlayer == null) {
+                    int asn = Integer.parseInt(target);
+                    DataManager.INSTANCE.getAsns().put(asn, accessType);
+                } else {
+                    DataManager.INSTANCE.getNicknames().put(target, accessType);
+                    if (newAccess == EnumAccess.BLACKLIST && targetPlayer != null) {
+                        targetPlayer.disconnect(kickMessage);
                     }
                 }
             }
