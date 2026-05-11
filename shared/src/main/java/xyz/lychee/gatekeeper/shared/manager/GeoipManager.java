@@ -34,14 +34,13 @@ public class GeoipManager extends AbstractManager implements Runnable {
     public static final GeoipManager INSTANCE = new GeoipManager();
     private static final Pattern ASN_PATTERN = Pattern.compile("\\d{4,6}");
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
-    private final ExecutorService executor = Executors.newFixedThreadPool(2);
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
-            .executor(this.executor)
+            .executor(TaskManager.INSTANCE.getCallbackExecutor())
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
-    private final Set<Integer> downloadedAsns = ConcurrentHashMap.newKeySet();
-    private final Set<Integer> downloadedProxies = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> blacklistedAsns = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> blacklistedProxies = ConcurrentHashMap.newKeySet();
     private final List<String> asnSource = new ArrayList<>();
     private final List<String> proxySources = new ArrayList<>();
     private final BinaryGeoIPDatabase database = new BinaryGeoIPDatabase();
@@ -75,8 +74,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
 
     @Override
     public boolean unload(Gatekeeper<?> gatekeeper) {
-        this.asnSource.clear();
-        this.proxySources.clear();
+        this.httpClient.close();
         return true;
     }
 
@@ -117,11 +115,11 @@ public class GeoipManager extends AbstractManager implements Runnable {
         }
 
         this.downloadFromSource(
-                " &8• &rDownloading suspicious ASNs from "+this.proxySources.size()+" sources...",
-                " &8• &rDownloaded %amount% suspicious ASNs in %time%!",
-                " &8• &rLoaded %amount% suspicious ASNs in %time%!",
+                " &8• &rDownloading suspicious ASNs from "+this.asnSource.size()+" sources...",
+                " &8• &rDownloaded %amount% suspicious ASNs in %time%ms!",
+                " &8• &rLoaded %amount% suspicious ASNs in %time%ms!",
                 this.asnSource,
-                this.downloadedAsns,
+                this.blacklistedAsns,
                 this.asnDataPath,
                 ASN_PATTERN,
                 str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null
@@ -132,7 +130,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
                 " &8• &rDownloaded %amount% suspicious IPs in %time%ms!",
                 " &8• &rLoaded %amount% suspicious IPs in %time%ms!",
                 this.proxySources,
-                this.downloadedProxies,
+                this.blacklistedProxies,
                 this.proxyDataPath,
                 IP_PATTERN,
                 str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null
@@ -155,7 +153,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
 
             CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
 
-            Executor delayed = CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, this.executor);
+            Executor delayed = CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, TaskManager.INSTANCE.getCallbackExecutor());
 
             for (String source : sources) {
                 future = future.thenCompose(v -> {

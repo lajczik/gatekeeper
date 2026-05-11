@@ -2,6 +2,7 @@ package xyz.lychee.gatekeeper.shared.modules;
 
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 
@@ -9,7 +10,6 @@ import java.util.concurrent.*;
 
 @Getter
 public class RateLimitModule extends AbstractModule implements Runnable {
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final ConcurrentHashMap<Integer, Long> ip_connect = new ConcurrentHashMap<>();
     private ScheduledFuture<?> task;
     private int server_limit;
@@ -46,22 +46,26 @@ public class RateLimitModule extends AbstractModule implements Runnable {
     }
 
     @Override
-    public boolean load() {
-        if (this.task != null) {
-            this.task.cancel(true);
-        }
+    public void run() {
+        long removable = System.currentTimeMillis() - ip_limit;
+        this.ip_connect.values().removeIf(value -> value < removable);
+    }
 
+    @Override
+    public boolean load() {
         this.server_limit = this.getConfig().getInt("server_limit");
         this.ip_limit = this.getConfig().getInt("ip_limit");
 
-        this.task = this.executor.scheduleAtFixedRate(this, 1, 1, TimeUnit.MINUTES);
+        this.task = TaskManager.INSTANCE.getScheduler().scheduleAtFixedRate(this, 1, 1, TimeUnit.MINUTES);
 
         return true;
     }
 
     @Override
-    public void run() {
-        long removable = System.currentTimeMillis() - ip_limit;
-        this.ip_connect.values().removeIf(value -> value < removable);
+    public boolean unload() {
+        if (this.task != null) {
+            this.task.cancel(true);
+        }
+        return true;
     }
 }

@@ -21,7 +21,7 @@ public class AsnFilterModule extends AbstractModule {
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
         return connection.getAsn() > 0
-                && (GeoipManager.INSTANCE.getDownloadedAsns().contains(connection.getAsn()) || this.listedAsn.contains(connection.getAsn()) == this.list_mode);
+                && (GeoipManager.INSTANCE.getBlacklistedAsns().contains(connection.getAsn()) || this.listedAsn.contains(connection.getAsn()) == this.list_mode);
     }
 
     @Override
@@ -41,6 +41,11 @@ public class AsnFilterModule extends AbstractModule {
         this.listedAsn.addAll(this.getConfig().getIntList("list"));
         this.list_mode = this.getConfig().getBoolean("list_mode");
 
+        return true;
+    }
+
+    @Override
+    public boolean unload() {
         return true;
     }
 }

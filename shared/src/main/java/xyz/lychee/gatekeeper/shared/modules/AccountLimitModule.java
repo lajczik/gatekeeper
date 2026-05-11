@@ -43,7 +43,11 @@ public class AccountLimitModule extends AbstractModule {
     @Override
     public boolean load() {
         this.accountLimitPerIp = this.getConfig().getInt("per_ip_limit");
+        return true;
+    }
 
+    @Override
+    public boolean unload() {
         return true;
     }
 }

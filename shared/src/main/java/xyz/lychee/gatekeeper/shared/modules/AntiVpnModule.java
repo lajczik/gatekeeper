@@ -4,6 +4,8 @@ import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
+import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.objects.ConditionSet;
@@ -96,6 +98,12 @@ public class AntiVpnModule extends AbstractModule {
                             try (InputStream is = response.body()) {
                                 boolean detected = provider.matches(JsonParser.object().from(is));
                                 this.checked.put(id, detected);
+                                if (detected && this.blacklist_asn) {
+                                    GeoipManager.INSTANCE.getBlacklistedAsns().add(connection.getAsn());
+                                }
+                                else {
+                                    GeoipManager.INSTANCE.getBlacklistedProxies().add(connection.getAddressData());
+                                }
                                 return detected;
                             } catch (IOException | JsonParserException ignored) {}
                         }
@@ -143,7 +151,7 @@ public class AntiVpnModule extends AbstractModule {
 
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(this.connect_timeout))
-                .executor(Executors.newFixedThreadPool(Math.max(1, this.getConfig().getInt("threads"))))
+                .executor(TaskManager.INSTANCE.getCallbackExecutor())
                 .build();
 
         this.whitelist.addAll(this.getConfig().getStringList("whitelist"));
@@ -169,6 +177,15 @@ public class AntiVpnModule extends AbstractModule {
         }
         Collections.shuffle(this.providers, RandomUtils.RANDOM);
 
+        return true;
+    }
+
+
+    @Override
+    public boolean unload() {
+        if (this.httpClient != null) {
+            this.httpClient.close();
+        }
         return true;
     }
 }

@@ -38,4 +38,9 @@ public class CountryFilterModule extends AbstractModule {
 
         return true;
     }
+
+    @Override
+    public boolean unload() {
+        return true;
+    }
 }

@@ -8,7 +8,6 @@ import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
 import java.util.*;
-import java.util.logging.Level;
 
 @Getter
 public class ModuleManager extends AbstractManager {
@@ -34,24 +33,36 @@ public class ModuleManager extends AbstractManager {
 
     @Override
     public boolean unload(Gatekeeper<?> plugin) {
+        for (AbstractModule module : this.loadedChecks) {
+            try {
+                module.unload();
+            } catch (Exception ex) {
+                module.getGatekeeper().logger().info(" &8• &cSkipping module " + module.getName() + ", reason: " + ex.getMessage());
+            }
+            module.setLoaded(false);
+        }
+        this.allChecks.clear();
+        this.loadedChecks.clear();
+        this.checksMap.clear();
         return true;
     }
 
     @Override
     public boolean reload(Gatekeeper<?> plugin) {
         this.loadedChecks.clear();
-        for (AbstractModule check : this.allChecks) {
+        for (AbstractModule module : this.allChecks) {
             try {
                 TimingUtil t = TimingUtil.startNew();
-                boolean success = check.loadAllConfig();
+                module.unload();
+                boolean success = module.loadAllConfig();
                 if (success) {
-                    this.loadedChecks.add(check);
-                    check.getGatekeeper().logger().info(" &8• &rSuccessfully loaded module " + check.getName() + " in " + t.stop().getExecutingTime() + "ms.");
+                    this.loadedChecks.add(module);
+                    module.getGatekeeper().logger().info(" &8• &rSuccessfully reloaded module " + module.getName() + " in " + t.stop().getExecutingTime() + "ms.");
                 }
-                check.setLoaded(success);
+                module.setLoaded(success);
             } catch (Exception ex) {
-                check.setLoaded(false);
-                check.getGatekeeper().logger().info(" &8• &cSkipping module " + check.getName() + ", reason: " + ex.getMessage());
+                module.setLoaded(false);
+                module.getGatekeeper().logger().info(" &8• &cSkipping module " + module.getName() + ", reason: " + ex.getMessage());
             }
         }
         this.loadedChecks.sort(Comparator.comparingInt(AbstractModule::getPriority));

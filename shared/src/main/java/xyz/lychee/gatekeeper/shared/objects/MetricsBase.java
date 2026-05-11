@@ -1,10 +1,9 @@
 package xyz.lychee.gatekeeper.shared.objects;
 
-import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.charts.CustomChart;
+import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.net.URI;
@@ -12,23 +11,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class MetricsBase {
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
-            task -> {
-                Thread thread = new Thread(task, "bStats-Metrics");
-                thread.setDaemon(true);
-                return thread;
-            });
-
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
-            .executor(this.scheduler)
+            .executor(TaskManager.INSTANCE.getCallbackExecutor())
             .build();
 
     private final String platform;
@@ -36,7 +24,7 @@ public class MetricsBase {
     private final int serviceId;
     private final Gatekeeper<?> plugin;
 
-    private final Set<CustomChart> customCharts = new HashSet<>();
+    //private final Set<CustomChart> customCharts = new HashSet<>();
 
     public MetricsBase(
             String platform,
@@ -51,12 +39,11 @@ public class MetricsBase {
         startSubmitting();
     }
 
-    public void addCustomChart(CustomChart chart) {
+    /*public void addCustomChart(CustomChart chart) {
         this.customCharts.add(chart);
-    }
+    }*/
 
     public void shutdown() {
-        scheduler.shutdown();
         httpClient.close();
     }
 
@@ -71,8 +58,8 @@ public class MetricsBase {
         // don't do it!
         long initialDelay = 1000 * 60 * (3 + RandomUtils.RANDOM.nextInt(3));
         long secondDelay = 1000 * 60 * RandomUtils.RANDOM.nextInt(30);
-        scheduler.schedule(this::submitData, initialDelay, TimeUnit.MILLISECONDS);
-        scheduler.scheduleAtFixedRate(this::submitData, initialDelay + secondDelay, 1000 * 60 * 30, TimeUnit.MILLISECONDS);
+        TaskManager.INSTANCE.getScheduler().schedule(this::submitData, initialDelay, TimeUnit.MILLISECONDS);
+        TaskManager.INSTANCE.getScheduler().scheduleAtFixedRate(this::submitData, initialDelay + secondDelay, 1000 * 60 * 30, TimeUnit.MILLISECONDS);
     }
 
     private void submitData() {
@@ -93,11 +80,11 @@ public class MetricsBase {
         JsonObject serviceJson = new JsonObject();
         serviceJson.put("id", this.serviceId);
         serviceJson.put("pluginVersion", platformData.getPluginVersion());
-        JsonArray chartsJson = new JsonArray();
+        /*JsonArray chartsJson = new JsonArray();
         for (CustomChart chart : this.customCharts) {
             chartsJson.add(chart.getRequestJsonObject());
         }
-        serviceJson.put("customCharts", chartsJson);
+        serviceJson.put("customCharts", chartsJson);*/
 
         baseJson.put("service", serviceJson);
         baseJson.put("serverUUID", this.serverUuid);

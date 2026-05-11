@@ -29,4 +29,9 @@ public class BlacklistModule extends AbstractModule {
     public boolean load() {
         return true;
     }
+
+    @Override
+    public boolean unload() {
+        return true;
+    }
 }

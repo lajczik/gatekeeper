@@ -79,4 +79,6 @@ public abstract class AbstractModule {
     }
 
     public abstract boolean load() throws Exception;
+
+    public abstract boolean unload() throws Exception;
 }

@@ -20,7 +20,7 @@ public class IpFilterModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        return GeoipManager.INSTANCE.getDownloadedProxies().contains(connection.getAddressData())
+        return GeoipManager.INSTANCE.getBlacklistedProxies().contains(connection.getAddressData())
                 || this.listedIps.contains(connection.getAddressData()) == this.list_mode;
     }
 
@@ -43,6 +43,11 @@ public class IpFilterModule extends AbstractModule {
         }
         this.list_mode = this.getConfig().getBoolean("list_mode");
 
+        return true;
+    }
+
+    @Override
+    public boolean unload() {
         return true;
     }
 }

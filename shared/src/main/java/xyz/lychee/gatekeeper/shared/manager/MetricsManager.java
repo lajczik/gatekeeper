@@ -1,15 +1,12 @@
 package xyz.lychee.gatekeeper.shared.manager;
 
-import com.grack.nanojson.JsonObject;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.charts.CustomChart;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.MetricsBase;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 public class MetricsManager extends AbstractManager {
     public static final MetricsManager INSTANCE = new MetricsManager();
@@ -53,7 +50,7 @@ public class MetricsManager extends AbstractManager {
         return true;
     }
 
-    public void addCustomChart(CustomChart chart) {
+    /*public void addCustomChart(CustomChart chart) {
         metricsBase.addCustomChart(chart);
-    }
+    }*/
 }
