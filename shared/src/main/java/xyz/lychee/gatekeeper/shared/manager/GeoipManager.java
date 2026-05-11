@@ -22,8 +22,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -111,11 +117,11 @@ public class GeoipManager extends AbstractManager implements Runnable {
                 Files.delete(sourceCsv);
             }
             this.database.load(this.geoDataPath);
-            this.logger.info(" &8• &rLoaded " + this.database.getCountryRangeCache().size() + " country and " + this.database.getAsnRangeCache().size() + " asn ranges in "+t.stop().getExecutingTime()+"ms!");
+            this.logger.info(" &8• &rLoaded " + this.database.getCountryRangeCache().size() + " country and " + this.database.getAsnRangeCache().size() + " asn ranges in " + t.stop().getExecutingTime() + "ms!");
         }
 
         this.downloadFromSource(
-                " &8• &rDownloading suspicious ASNs from "+this.asnSource.size()+" sources...",
+                " &8• &rDownloading suspicious ASNs from " + this.asnSource.size() + " sources...",
                 " &8• &rDownloaded %amount% suspicious ASNs in %time%ms!",
                 " &8• &rLoaded %amount% suspicious ASNs in %time%ms!",
                 this.asnSource,
@@ -126,7 +132,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
         );
 
         this.downloadFromSource(
-                " &8• &rDownloading suspicious IPs from "+this.proxySources.size()+" sources...",
+                " &8• &rDownloading suspicious IPs from " + this.proxySources.size() + " sources...",
                 " &8• &rDownloaded %amount% suspicious IPs in %time%ms!",
                 " &8• &rLoaded %amount% suspicious IPs in %time%ms!",
                 this.proxySources,
@@ -195,8 +201,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
                                 .replace("%time%", Long.toString(t.stop().getExecutingTime()))
                 );
             });
-        }
-        else {
+        } else {
             SerializeUtils.deserialize(Files.readAllBytes(outputPath), outputSet);
 
             this.logger.info(

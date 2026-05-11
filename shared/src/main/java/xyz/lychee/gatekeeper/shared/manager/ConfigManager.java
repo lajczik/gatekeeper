@@ -48,9 +48,8 @@ public class ConfigManager extends AbstractManager {
         String prefixString = this.yaml.getString("main.prefix");
 
         if (this.yaml.getBoolean("main.prefix_hover")) {
-            this.prefix = plugin.language().hover(prefixString, prefixString+" &fGateKeeper &b" + plugin.platformData().getPluginVersion() + "\n &8{*} &7Click to open plugin in modrinth!");
-        }
-        else {
+            this.prefix = plugin.language().hover(prefixString, prefixString + " &fGateKeeper &b" + plugin.platformData().getPluginVersion() + "\n &8{*} &7Click to open plugin in modrinth!");
+        } else {
             this.prefix = plugin.language().color(prefixString, false);
         }
     }

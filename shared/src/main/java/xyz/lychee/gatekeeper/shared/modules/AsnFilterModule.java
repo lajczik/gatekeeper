@@ -8,7 +8,6 @@ import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.*;
 
 public class AsnFilterModule extends AbstractModule {
     private final Set<Integer> listedAsn = new HashSet<>();

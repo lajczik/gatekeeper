@@ -10,7 +10,9 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.PluginManager;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.manager.*;
+import xyz.lychee.gatekeeper.shared.manager.ConfigManager;
+import xyz.lychee.gatekeeper.shared.manager.DataManager;
+import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
@@ -177,7 +179,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
             component.setHoverEvent(
                     new HoverEvent(
                             HoverEvent.Action.SHOW_TEXT,
-                            new BaseComponent[] { this.color(hoverText, false) }
+                            new BaseComponent[]{this.color(hoverText, false)}
                     )
             );
             return component;

@@ -7,8 +7,8 @@ import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
-import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.objects.ConditionSet;
+import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.IOException;
@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -100,8 +99,7 @@ public class AntiVpnModule extends AbstractModule {
                                 this.checked.put(id, detected);
                                 if (detected && this.blacklist_asn) {
                                     GeoipManager.INSTANCE.getBlacklistedAsns().add(connection.getAsn());
-                                }
-                                else {
+                                } else {
                                     GeoipManager.INSTANCE.getBlacklistedProxies().add(connection.getAddressData());
                                 }
                                 return detected;

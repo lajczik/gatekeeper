@@ -7,8 +7,8 @@ import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class IpFilterModule extends AbstractModule {
     private final Set<Integer> listedIps = new HashSet<>();

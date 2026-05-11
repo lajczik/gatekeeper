@@ -3,7 +3,8 @@ package xyz.lychee.gatekeeper.shared.objects;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;

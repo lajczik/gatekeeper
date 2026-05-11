@@ -6,11 +6,10 @@ import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.logging.Level;
 
 public interface Gatekeeper<T> {
-    AbstractManager[] MANAGERS = new AbstractManager[] {
+    AbstractManager[] MANAGERS = new AbstractManager[]{
             ConfigManager.INSTANCE,
             DataManager.INSTANCE,
             ModuleManager.INSTANCE,

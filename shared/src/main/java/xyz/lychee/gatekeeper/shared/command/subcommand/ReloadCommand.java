@@ -3,8 +3,6 @@ package xyz.lychee.gatekeeper.shared.command.subcommand;
 import org.jetbrains.annotations.NotNull;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.command.PermissibleCommand;
-import xyz.lychee.gatekeeper.shared.manager.ConfigManager;
-import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
 import xyz.lychee.gatekeeper.shared.objects.CommandPlayer;
 
