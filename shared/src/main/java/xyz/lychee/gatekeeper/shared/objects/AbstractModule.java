@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
 import java.io.File;
 import java.util.Collections;
@@ -35,7 +36,7 @@ public abstract class AbstractModule {
 
     public abstract boolean handleDisconnect(GeoConnection connection);
 
-    public void printCheck(GeoConnection connection) {
+    public void printCheck(GeoConnection connection, TimingUtil timer) {
         if (this.logMessage != null) {
             this.gatekeeper.logger().info(
                     this.logMessage
@@ -43,6 +44,7 @@ public abstract class AbstractModule {
                             .replace("%address%", connection.getAddress().getHostAddress())
                             .replace("%country%", connection.getCountry())
                             .replace("%asn%", Integer.toString(connection.getAsn()))
+                            .replace("%time%", Long.toString(timer.stop().getExecutingTime()))
             );
         }
     }

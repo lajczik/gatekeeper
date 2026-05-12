@@ -3,6 +3,7 @@ package xyz.lychee.gatekeeper.shared.objects;
 import xyz.lychee.gatekeeper.shared.manager.DataManager;
 import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
+import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -28,6 +29,8 @@ public class ListenerHandler {
     }
 
     public Object handlePreLogin(InetAddress address, String name) {
+        TimingUtil t = TimingUtil.startNew();
+
         int addressData = AddressUtils.ipv4ToInt(address);
         GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         connection.setTimestamp(System.currentTimeMillis());
@@ -37,7 +40,7 @@ public class ListenerHandler {
 
         for (AbstractModule check : ModuleManager.INSTANCE.getLoadedChecks()) {
             if (check.handlePreLogin(connection)) {
-                check.printCheck(connection);
+                check.printCheck(connection, t);
                 return check.getKickMessage();
             }
         }

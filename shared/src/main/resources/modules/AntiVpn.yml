@@ -1,6 +1,6 @@
 enabled: true
 priority: 7
-log: "Connection from %address%/%name% rejected: VPN detected!" # Set empty "" to disable the logger
+log: "Connection from %address%/%name% rejected: VPN detected! (ASN=%asn%, TIME=%time%ms, COUNTRY=%country%)" # Set empty "" to disable the logger
 kick:
   - "%prefix%"
   - ""

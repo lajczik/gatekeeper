@@ -1,6 +1,6 @@
 enabled: true
 priority: 3
-log: "Connection from %address%/%name% rejected: too many accounts detected from this IP!" # Set empty "" to disable the logger
+log: "Connection from %address%/%name% rejected: too many accounts detected from this IP! (ASN=%asn%, TIME=%time%ms, COUNTRY=%country%)" # Set empty "" to disable the logger
 kick:
   - "%prefix%"
   - ""
