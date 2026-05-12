@@ -40,17 +40,15 @@ import java.nio.file.Path;
 public class SpongeMain implements Gatekeeper<Component> {
     private final PluginContainer container;
     private final Path dataDirectory;
-    private final Game game;
     private final AbstractLang<Component> language;
     private final ColoredLogger logger;
     private final LegacyComponentSerializer serializer;
-    private PlatformData platformData;
+    private final PlatformData platformData;
 
     @Inject
-    public SpongeMain(PluginContainer pluginContainer, Logger logger, Game game, @ConfigDir(sharedRoot = false) Path dataDirectory) {
+    public SpongeMain(PluginContainer pluginContainer, Logger logger, @ConfigDir(sharedRoot = false) Path dataDirectory) {
         this.container = pluginContainer;
         this.dataDirectory = dataDirectory;
-        this.game = game;
         this.logger = new SpongeColoredLogger(logger);
         this.serializer = LegacyComponentSerializer.builder()
                 .character('&')
@@ -59,17 +57,21 @@ public class SpongeMain implements Gatekeeper<Component> {
                 .useUnusualXRepeatedCharacterHexFormat()
                 .build();
         this.language = new SpongeLang(this);
+        this.platformData = new PlatformData(
+                this.container.metadata().version().toString(),
+                31259,
+                "sponge",
+                json -> {
+                    json.put("playerAmount", Sponge.server().onlinePlayers().size());
+                    json.put("onlineMode", Sponge.server().isOnlineModeEnabled() ? 1 : 0);
+                    json.put("minecraftVersion", Sponge.game().platform().minecraftVersion().name());
+                    json.put("spongeImplementation", Sponge.platform().container(Platform.Component.IMPLEMENTATION).metadata().id());
+                }
+        );
     }
 
     @Listener
     public void onEnable(StartedEngineEvent<Server> event) {
-        this.platformData = new PlatformData(
-                this.container.metadata().version().toString(),
-                this.game.platform().container(Platform.Component.IMPLEMENTATION).metadata().id(),
-                this.game.platform().minecraftVersion().name(),
-                this.game.server().isOnlineModeEnabled()
-        );
-
         this.logger.sendHeader(this);
         this.loadManagers();
         this.language.loadLanguage();
@@ -104,7 +106,6 @@ public class SpongeMain implements Gatekeeper<Component> {
 
     @Override
     public PlatformData platformData() {
-        this.platformData.setPlayers(this.game.server().onlinePlayers().size());
         return this.platformData;
     }
 
@@ -138,13 +139,13 @@ public class SpongeMain implements Gatekeeper<Component> {
 
                 Component kickMessage = (Component) check.getKickMessage();
                 byte accessType = newAccess.getType();
-                ServerPlayer targetPlayer = getGame().server().player(target).orElse(null);
+                ServerPlayer targetPlayer = Sponge.server().player(target).orElse(null);
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
                     DataManager.INSTANCE.getAddresses().put(addressData, accessType);
                     if (newAccess == EnumAccess.BLACKLIST) {
-                        getGame().server().onlinePlayers().stream()
+                        Sponge.server().onlinePlayers().stream()
                                 .filter(p -> AddressUtils.isIpv4Equal(p.connection().address().getAddress(), addressData))
                                 .forEach(p -> p.kick(kickMessage));
                     }

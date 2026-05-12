@@ -2,6 +2,7 @@ package xyz.lychee.gatekeeper.bungee;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -27,7 +28,19 @@ import java.util.regex.Pattern;
 public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Listener {
     private final AbstractLang<BaseComponent> language = new BungeeLang(this);
     private final ColoredLogger logger = new ColoredLogger(this.getProxy().getLogger());
-    private final PlatformData platformData = new PlatformData(this.getDescription().getVersion(), this.getProxy().getVersion(), this.getProxy().getName(), this.getProxy().getConfig().isOnlineMode());
+    private final PlatformData platformData = new PlatformData(
+            this.getDescription().getVersion(),
+            27413,
+            "bungeecord",
+            json -> {
+                ProxyServer proxy = this.getProxy();
+                json.put("playerAmount", proxy.getOnlineCount());
+                json.put("managedServers", proxy.getServers().size());
+                json.put("onlineMode", proxy.getConfig().isOnlineMode() ? 1 : 0);
+                json.put("bungeecordVersion", proxy.getVersion());
+                json.put("bungeecordName", proxy.getName());
+            }
+    );
 
     @Override
     public void onEnable() {
@@ -64,7 +77,6 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
 
     @Override
     public PlatformData platformData() {
-        this.platformData.setPlayers(this.getProxy().getOnlineCount());
         return this.platformData;
     }
 

@@ -24,7 +24,17 @@ import java.util.regex.Pattern;
 public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listener {
     private final AbstractLang<String> language = new BukkitLang(this);
     private final ColoredLogger logger = new ColoredLogger(Bukkit.getLogger());
-    private final PlatformData platformData = new PlatformData(this.getDescription().getVersion(), Bukkit.getVersion(), Bukkit.getName(), Bukkit.getOnlineMode());
+    private final PlatformData platformData = new PlatformData(
+            this.getDescription().getVersion(),
+            27416,
+            "bukkit",
+            json -> {
+                json.put("playerAmount", Bukkit.getOnlinePlayers().size());
+                json.put("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);
+                json.put("bukkitVersion", Bukkit.getVersion());
+                json.put("bukkitName", Bukkit.getName());
+            }
+    );
 
     @Override
     public void onEnable() {
@@ -64,7 +74,6 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
 
     @Override
     public PlatformData platformData() {
-        this.platformData.setPlayers(Bukkit.getOnlinePlayers().size());
         return this.platformData;
     }
 

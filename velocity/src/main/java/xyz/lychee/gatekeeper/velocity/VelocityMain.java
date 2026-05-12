@@ -53,9 +53,16 @@ public class VelocityMain implements Gatekeeper<Component> {
         this.logger = new VelocityColoredLogger();
         this.platformData = new PlatformData(
                 container.getDescription().getVersion().orElse("1.0.0"),
-                this.getProxy().getVersion().getVersion(),
-                this.getProxy().getVersion().getName(),
-                this.getProxy().getConfiguration().isOnlineMode()
+                27356,
+                "velocity",
+                json -> {
+                    json.put("playerAmount", this.proxy.getPlayerCount());
+                    json.put("managedServers", this.proxy.getAllServers().size());
+                    json.put("onlineMode", this.proxy.getConfiguration().isOnlineMode() ? 1 : 0);
+                    json.put("velocityVersionVersion", this.proxy.getVersion().getVersion());
+                    json.put("velocityVersionName", this.proxy.getVersion().getName());
+                    json.put("velocityVersionVendor", this.proxy.getVersion().getVendor());
+                }
         );
     }
 
@@ -96,7 +103,6 @@ public class VelocityMain implements Gatekeeper<Component> {
 
     @Override
     public PlatformData platformData() {
-        this.platformData.setPlayers(this.proxy.getPlayerCount());
         return this.platformData;
     }
 

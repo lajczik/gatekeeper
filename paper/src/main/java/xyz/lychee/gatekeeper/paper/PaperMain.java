@@ -32,7 +32,17 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
             .build();
     private final AbstractLang<Component> language = new PaperLang(this);
     private final ColoredLogger logger = new ColoredLogger(Bukkit.getLogger());
-    private final PlatformData platformData = new PlatformData(this.getPluginMeta().getVersion(), Bukkit.getVersion(), Bukkit.getName(), Bukkit.getOnlineMode());
+    private final PlatformData platformData = new PlatformData(
+            this.getPluginMeta().getVersion(),
+            27416,
+            "bukkit",
+            json -> {
+                json.put("playerAmount", Bukkit.getOnlinePlayers().size());
+                json.put("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);
+                json.put("bukkitVersion", Bukkit.getVersion());
+                json.put("bukkitName", Bukkit.getName());
+            }
+    );
 
     @Override
     public void onEnable() {
@@ -71,7 +81,6 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
     @Override
     public PlatformData platformData() {
-        this.platformData.setPlayers(Bukkit.getOnlinePlayers().size());
         return this.platformData;
     }
 
