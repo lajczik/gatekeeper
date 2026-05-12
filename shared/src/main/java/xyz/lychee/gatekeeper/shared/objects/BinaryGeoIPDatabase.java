@@ -2,8 +2,8 @@ package xyz.lychee.gatekeeper.shared.objects;
 
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -11,6 +11,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Getter
 public class BinaryGeoIPDatabase {
@@ -24,41 +27,50 @@ public class BinaryGeoIPDatabase {
     private int countryRecordCount;
     private int asnRecordCount;
 
-    public void load(Path databaseFile) throws IOException {
+    public CompletableFuture<Void> load(Logger logger, Path databaseFile) {
         if (Files.notExists(databaseFile)) {
-            throw new FileNotFoundException("Database file not found: " + databaseFile.getFileName().toString());
+            logger.severe("Database file not found: " + databaseFile.getFileName().toString());
+            return CompletableFuture.completedFuture(null);
         }
 
-        byte[] data = Files.readAllBytes(databaseFile);
+        return CompletableFuture.runAsync(() -> {
+            try {
+                byte[] data = Files.readAllBytes(databaseFile);
 
-        ByteBuffer buffer = ByteBuffer.wrap(data);
+                ByteBuffer buffer = ByteBuffer.wrap(data);
 
-        int magic = buffer.getInt();
-        if (magic != BinaryGeoIPBuilder.MAGIC_NUMBER) {
-            throw new IOException("Invalid database format (wrong magic number)");
-        }
+                int magic = buffer.getInt();
+                if (magic != BinaryGeoIPBuilder.MAGIC_NUMBER) {
+                    logger.severe("Invalid database format (wrong magic number)");
+                    return;
+                }
 
-        int version = buffer.getInt();
-        if (version != BinaryGeoIPBuilder.VERSION) {
-            throw new IOException("Unsupported database version: " + version);
-        }
+                int version = buffer.getInt();
+                if (version != BinaryGeoIPBuilder.VERSION) {
+                    logger.severe("Unsupported database version: " + version);
+                    return;
+                }
 
-        countryRecordCount = buffer.getInt();
-        asnRecordCount = buffer.getInt();
+                this.countryRecordCount = buffer.getInt();
+                this.asnRecordCount = buffer.getInt();
 
-        int countryDataSize = countryRecordCount * 10; // 4 + 4 + 2 bytes per record
-        byte[] countryData = new byte[countryDataSize];
-        buffer.get(countryData);
+                byte[] countryData = new byte[this.countryRecordCount * 10]; // 4 + 4 + 2 bytes per record
+                buffer.get(countryData);
 
-        int asnDataSize = asnRecordCount * 12; // 4 + 4 + 4 bytes per record
-        byte[] asnData = new byte[asnDataSize];
-        buffer.get(asnData);
+                byte[] asnData = new byte[this.asnRecordCount * 12]; // 4 + 4 + 4 bytes per record
+                buffer.get(asnData);
 
-        countryBuffer = ByteBuffer.wrap(countryData).asReadOnlyBuffer();
-        asnBuffer = ByteBuffer.wrap(asnData).asReadOnlyBuffer();
+                this.countryBuffer = ByteBuffer.wrap(countryData).asReadOnlyBuffer();
+                this.asnBuffer = ByteBuffer.wrap(asnData).asReadOnlyBuffer();
 
-        this.countryRangeCache = this.readAllCountryRanges();
-        this.asnRangeCache = this.readAllASNRanges();
+                this.countryRangeCache = this.readAllCountryRanges();
+                this.asnRangeCache = this.readAllASNRanges();
+                logger.info(" &8• &rLoaded " + this.countryRecordCount+ " country and " + this.asnRecordCount + " asn ranges!");
+            }
+            catch (IOException ex) {
+                logger.log(Level.SEVERE, "Error reading geo database file", ex);
+            }
+        }, TaskManager.INSTANCE.getAsyncExecutor());
     }
 
     private GeoRange<String> readCountryRecord(int index) {
@@ -123,6 +135,13 @@ public class BinaryGeoIPDatabase {
                 low = mid + 1;
             } else {
                 return midVal.getValue();
+            }
+        }
+
+        // second check for addresses that have not been detected
+        for (GeoRange<V> range : ranges) {
+            if (range.contains(ip)) {
+                return range.getValue();
             }
         }
 

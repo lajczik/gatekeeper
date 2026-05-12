@@ -14,12 +14,10 @@ import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -40,17 +38,11 @@ public class GeoipManager extends AbstractManager implements Runnable {
     public static final GeoipManager INSTANCE = new GeoipManager();
     private static final Pattern ASN_PATTERN = Pattern.compile("\\d{4,6}");
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .executor(TaskManager.INSTANCE.getCallbackExecutor())
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
     private final Set<Integer> blacklistedAsns = ConcurrentHashMap.newKeySet();
     private final Set<Integer> blacklistedProxies = ConcurrentHashMap.newKeySet();
     private final List<String> asnSource = new ArrayList<>();
     private final List<String> proxySources = new ArrayList<>();
     private final BinaryGeoIPDatabase database = new BinaryGeoIPDatabase();
-    private boolean firstLoad = true;
     private Logger logger;
     private Path geoDataPath;
     private Path asnDataPath;
@@ -73,14 +65,12 @@ public class GeoipManager extends AbstractManager implements Runnable {
         Collections.shuffle(this.proxySources, RandomUtils.RANDOM);
 
         this.download();
-        this.firstLoad = false;
 
         return true;
     }
 
     @Override
     public boolean unload(Gatekeeper<?> gatekeeper) {
-        this.httpClient.close();
         return true;
     }
 
@@ -89,35 +79,33 @@ public class GeoipManager extends AbstractManager implements Runnable {
         return true;
     }
 
-    private boolean needUpdate(Path dataFile) throws IOException {
+    private boolean needUpdate(Path dataFile) {
         if (Files.notExists(dataFile)) {
             return true;
         }
 
-        Instant updateThreshold = Instant.now().minus(12, ChronoUnit.HOURS);
-        Instant fileModified = Files.getLastModifiedTime(dataFile).toInstant();
-        return fileModified.compareTo(updateThreshold) < 0;
+        try {
+            Instant updateThreshold = Instant.now().minus(12, ChronoUnit.HOURS);
+            Instant fileModified = Files.getLastModifiedTime(dataFile).toInstant();
+            return fileModified.compareTo(updateThreshold) < 0;
+        }
+        catch (IOException ignored) {
+            return true;
+        }
     }
 
     @Override
     public void run() {
-
+        this.download();
     }
 
-    public void download() throws IOException {
-        boolean geoNeedUpdate = this.needUpdate(this.geoDataPath);
-        if (geoNeedUpdate || this.firstLoad) {
-            TimingUtil t = TimingUtil.startNew();
-            if (geoNeedUpdate) {
-                Path sourceCsv = this.geoDataPath.getParent().resolve("temp_geodata.csv");
-                BinaryGeoIPBuilder builder = new BinaryGeoIPBuilder();
-                builder.downloadSource(sourceCsv);
-                builder.buildDatabase(sourceCsv, this.geoDataPath);
-
-                Files.delete(sourceCsv);
-            }
-            this.database.load(this.geoDataPath);
-            this.logger.info(" &8• &rLoaded " + this.database.getCountryRangeCache().size() + " country and " + this.database.getAsnRangeCache().size() + " asn ranges in " + t.stop().getExecutingTime() + "ms!");
+    public void download() {
+        if (this.needUpdate(this.geoDataPath)) {
+            BinaryGeoIPBuilder.buildDatabase(this.logger, this.geoDataPath)
+                    .thenCompose(v -> this.database.load(this.logger, this.geoDataPath));
+        }
+        else {
+            this.database.load(this.logger, this.geoDataPath);
         }
 
         this.downloadFromSource(
@@ -152,7 +140,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
             Path outputPath,
             Pattern pattern,
             Function<String, Integer> parser
-    ) throws IOException {
+    ) {
         TimingUtil t = TimingUtil.startNew();
         if (this.needUpdate(outputPath)) {
             this.logger.info(downloadingLog);
@@ -170,7 +158,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             .build();
 
                     CompletableFuture<HttpResponse<String>> responseFuture =
-                            this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+                            TaskManager.INSTANCE.getHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString());
 
                     return responseFuture
                             .exceptionally(err -> null)
@@ -202,13 +190,16 @@ public class GeoipManager extends AbstractManager implements Runnable {
                 );
             });
         } else {
-            SerializeUtils.deserialize(Files.readAllBytes(outputPath), outputSet);
+            try {
+                SerializeUtils.deserialize(Files.readAllBytes(outputPath), outputSet);
 
-            this.logger.info(
-                    loadedLog
-                            .replace("%amount%", Integer.toString(outputSet.size()))
-                            .replace("%time%", Long.toString(t.stop().getExecutingTime()))
-            );
+                this.logger.info(
+                        loadedLog
+                                .replace("%amount%", Integer.toString(outputSet.size()))
+                                .replace("%time%", Long.toString(t.stop().getExecutingTime()))
+                );
+            }
+            catch (IOException ignored) {}
         }
     }
 }
