@@ -32,7 +32,6 @@ public class AntiVpnModule extends AbstractModule {
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
     private final Set<String> whitelist = new HashSet<>();
     private final List<ConditionSet.Provider> providers = new ArrayList<>();
-    private HttpClient httpClient;
     private Semaphore semaphore;
     private int connect_timeout;
     private int read_timeout;
@@ -89,7 +88,7 @@ public class AntiVpnModule extends AbstractModule {
         }
 
         try {
-            CompletableFuture<Boolean> future = this.httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
+            CompletableFuture<Boolean> future = TaskManager.INSTANCE.getHttpClient().sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
                     .thenApply(response -> {
                         this.pendingFutures.remove(id);
                         int statusCode = response.statusCode();
@@ -136,21 +135,12 @@ public class AntiVpnModule extends AbstractModule {
         this.whitelist.clear();
         this.providers.clear();
 
-        if (this.httpClient != null) {
-            this.httpClient.close();
-        }
-
         this.connect_timeout = this.getConfig().getInt("connect_timeout");
         this.read_timeout = this.getConfig().getInt("read_timeout");
         this.blacklist_asn = this.getConfig().getBoolean("blacklist_asn");
 
         int max_concurrent_checks = this.getConfig().getInt("max_concurrent_checks");
         this.semaphore = max_concurrent_checks > 0 ? new Semaphore(max_concurrent_checks) : null;
-
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(this.connect_timeout))
-                .executor(TaskManager.INSTANCE.getCallbackExecutor())
-                .build();
 
         this.whitelist.addAll(this.getConfig().getStringList("whitelist"));
 
@@ -178,12 +168,8 @@ public class AntiVpnModule extends AbstractModule {
         return true;
     }
 
-
     @Override
     public boolean unload() {
-        if (this.httpClient != null) {
-            this.httpClient.close();
-        }
         return true;
     }
 }

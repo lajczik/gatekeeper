@@ -5,9 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,41 +14,58 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TaskManager extends AbstractManager {
     public static final TaskManager INSTANCE = new TaskManager();
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(
-            1,
-            new SimpleThreadFactory("Gatekeeper-Scheduler")
-    );
-
-    private final ExecutorService callbackExecutor = new ThreadPoolExecutor(
-            4,
-            64,
-            60L, TimeUnit.SECONDS,
-            new SynchronousQueue<>(),
-            new SimpleThreadFactory("Gatekeeper-Callback"),
-            new ThreadPoolExecutor.CallerRunsPolicy()
-    );
-
-    private final Set<ScheduledFuture<?>> tasks = new HashSet<>();
+    private ScheduledExecutorService scheduler;
+    private ExecutorService callbackExecutor;
+    private ExecutorService asyncExecutor;
+    private HttpClient httpClient;
 
     @Override
     public boolean load(Gatekeeper<?> plugin) {
-        Iterator<ScheduledFuture<?>> it = this.tasks.iterator();
-        while (it.hasNext()) {
-            it.next().cancel(true);
-            it.remove();
-        }
+        this.callbackExecutor = new ThreadPoolExecutor(
+                4,
+                64,
+                60L, TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                new SimpleThreadFactory("Gatekeeper-Callback"),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
 
-        this.tasks.add(scheduler.scheduleAtFixedRate(GeoipManager.INSTANCE, 1, 6, TimeUnit.HOURS));
-        this.tasks.add(scheduler.scheduleAtFixedRate(UpdaterManager.INSTANCE, 1, 60, TimeUnit.MINUTES));
-        this.tasks.add(scheduler.scheduleAtFixedRate(DataManager.INSTANCE, 1, 1, TimeUnit.MINUTES));
+        this.scheduler = Executors.newScheduledThreadPool(
+                1,
+                new SimpleThreadFactory("Gatekeeper-Scheduler")
+        );
+
+        this.asyncExecutor = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors() / 2,
+                new SimpleThreadFactory("Gatekeeper-Worker")
+        );
+
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(15))
+                .executor(this.callbackExecutor)
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
+
+        this.scheduler.scheduleAtFixedRate(GeoipManager.INSTANCE, 1, 6, TimeUnit.HOURS);
+        this.scheduler.scheduleAtFixedRate(UpdaterManager.INSTANCE, 1, 60, TimeUnit.MINUTES);
+        this.scheduler.scheduleAtFixedRate(DataManager.INSTANCE, 1, 1, TimeUnit.MINUTES);
         return true;
     }
 
     @Override
     public boolean unload(Gatekeeper<?> plugin) {
-        scheduler.shutdown();
-        callbackExecutor.shutdown();
-        this.tasks.clear();
+        if (this.scheduler != null) {
+            this.scheduler.shutdown();
+        }
+        if (this.callbackExecutor != null) {
+            this.callbackExecutor.shutdown();
+        }
+        if (this.asyncExecutor != null) {
+            this.asyncExecutor.shutdown();
+        }
+        if (this.httpClient != null) {
+            this.httpClient.close();
+        }
         return true;
     }
 
