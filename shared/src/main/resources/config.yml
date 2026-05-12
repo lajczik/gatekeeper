@@ -33,14 +33,24 @@ main:
     # Asn sources used for AsnFilter module
     asn_sources:
       - "https://raw.githubusercontent.com/bountyyfi/bad-asn-list/refs/heads/main/all.txt"
-      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/top_100.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/top_1000.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/kind_vpn.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/kind_hosting.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/kind_scanner.txt"
       - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/datacenter/ASN.txt"
       - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/vpn/ASN.txt"
-      - "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/VPN%20Providers/ASN.txt"
-      - "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/VPS%20Providers/ASN.txt"
+      - "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/all.txt"
+      - "https://www.spamhaus.org/drop/asndrop.json"
+      - "https://raw.githubusercontent.com/brianhama/bad-asn-list/refs/heads/master/bad-asn-list.csv"
 
     # Proxy sources used for IpsFilter module
     proxy_sources:
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/ip/kind_vpn.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/ip/kind_scanner.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/ip/kind_proxy.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/ip/kind_hosting.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/ip/kind_tor.txt"
+      - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/ip/top_10000.txt"
       - "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"
       - "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt"
       - "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt"
