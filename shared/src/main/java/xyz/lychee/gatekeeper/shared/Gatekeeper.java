@@ -11,10 +11,10 @@ import java.util.logging.Level;
 public interface Gatekeeper<T> {
     AbstractManager[] MANAGERS = new AbstractManager[]{
             ConfigManager.INSTANCE,
+            TaskManager.INSTANCE,
             DataManager.INSTANCE,
             ModuleManager.INSTANCE,
             GeoipManager.INSTANCE,
-            TaskManager.INSTANCE,
             UpdaterManager.INSTANCE,
             MetricsManager.INSTANCE
     };
