@@ -41,7 +41,7 @@ public class TaskManager extends AbstractManager {
         );
 
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(15))
+                .connectTimeout(Duration.ofSeconds(15))
                 .executor(this.callbackExecutor)
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
