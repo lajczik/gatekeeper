@@ -68,10 +68,7 @@ public class VelocityMain implements Gatekeeper<Component> {
 
     @Subscribe
     public void onInit(ProxyInitializeEvent event) {
-        this.logger.sendHeader(this);
-
         this.loadManagers();
-
         this.language.loadLanguage();
 
         EventManager eventManager = this.proxy.getEventManager();
