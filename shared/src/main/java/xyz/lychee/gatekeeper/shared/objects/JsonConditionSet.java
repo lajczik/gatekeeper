@@ -2,6 +2,8 @@ package xyz.lychee.gatekeeper.shared.objects;
 
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonParserException;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -10,15 +12,15 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public final class ConditionSet {
+public final class JsonConditionSet extends AbstractConditionSet {
     private static final Pattern TERM_PATTERN = Pattern.compile("^(.+?)(>=|<=|>|<|=)(.+)$");
     private final Term[][] orClauses;
 
-    private ConditionSet(Term[][] orClauses) {
+    private JsonConditionSet(Term[][] orClauses) {
         this.orClauses = orClauses;
     }
 
-    public static ConditionSet compile(String expr) {
+    public static JsonConditionSet compile(String expr) {
         if (expr == null || expr.trim().isEmpty()) return null;
 
         String[] orParts = expr.split("\\|");
@@ -42,7 +44,7 @@ public final class ConditionSet {
         }
 
         if (compiledOrs.isEmpty()) return null;
-        return new ConditionSet(compiledOrs.toArray(new Term[0][]));
+        return new JsonConditionSet(compiledOrs.toArray(new Term[0][]));
     }
 
     private static Term parseTerm(String expression) {
@@ -99,19 +101,21 @@ public final class ConditionSet {
         return segments;
     }
 
-    public boolean evaluate(Object json) {
-        if (json == null) return false;
+    @Override
+    public boolean evaluate(String str) {
+        if (str == null) return false;
 
-        for (Term[] andBlock : orClauses) {
-            boolean allMatch = true;
-            for (Term t : andBlock) {
-                if (!t.matches(json)) {
-                    allMatch = false;
-                    break;
+        try {
+            JsonObject json = JsonParser.object().from(str);
+            for (Term[] andBlock : orClauses) {
+                for (Term t : andBlock) {
+                    if (t.matches(json)) {
+                        return true;
+                    }
                 }
             }
-            if (allMatch) return true;
         }
+        catch (JsonParserException ignored) {}
         return false;
     }
 
@@ -176,25 +180,6 @@ public final class ConditionSet {
                 default:
                     return false;
             }
-        }
-    }
-
-    @Getter
-    public static final class Provider {
-        private final String name;
-        private final String url;
-        private final Map<String, String> headers;
-        private final ConditionSet condition;
-
-        public Provider(String name, String url, Map<String, String> headers, ConditionSet condition) {
-            this.name = name;
-            this.url = url;
-            this.headers = headers;
-            this.condition = condition;
-        }
-
-        public boolean matches(Object json) {
-            return condition == null || condition.evaluate(json);
         }
     }
 }
