@@ -46,10 +46,7 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
     @Override
     public void onEnable() {
-        this.logger.sendHeader(this);
-
         this.loadManagers();
-
         this.language.loadLanguage();
 
         Bukkit.getPluginManager().registerEvents(new PaperListeners(this), this);

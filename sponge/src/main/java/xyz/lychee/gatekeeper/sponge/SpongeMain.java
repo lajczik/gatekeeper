@@ -72,7 +72,6 @@ public class SpongeMain implements Gatekeeper<Component> {
 
     @Listener
     public void onEnable(StartedEngineEvent<Server> event) {
-        this.logger.sendHeader(this);
         this.loadManagers();
         this.language.loadLanguage();
 

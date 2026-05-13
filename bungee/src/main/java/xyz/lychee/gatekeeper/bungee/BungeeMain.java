@@ -44,10 +44,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
 
     @Override
     public void onEnable() {
-        this.logger.sendHeader(this);
-
         this.loadManagers();
-
         this.language.loadLanguage();
 
         PluginManager pm = getProxy().getPluginManager();

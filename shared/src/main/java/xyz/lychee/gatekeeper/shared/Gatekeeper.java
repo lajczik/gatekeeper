@@ -32,6 +32,8 @@ public interface Gatekeeper<T> {
     CommandPlayer<T> commandPlayer(Object player);
 
     default void loadManagers() {
+        this.logger().sendHeader(this);
+
         TimingUtil t = new TimingUtil();
         for (AbstractManager manager : MANAGERS) {
             try {
@@ -46,6 +48,8 @@ public interface Gatekeeper<T> {
     }
 
     default void unloadManagers() {
+        this.logger().sendHeader(this);
+
         TimingUtil t = new TimingUtil();
         for (AbstractManager manager : MANAGERS) {
             try {

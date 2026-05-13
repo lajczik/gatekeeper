@@ -38,10 +38,7 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
 
     @Override
     public void onEnable() {
-        this.logger.sendHeader(this);
-
         this.loadManagers();
-
         this.language.loadLanguage();
 
         Bukkit.getPluginManager().registerEvents(new BukkitListeners(this), this);
