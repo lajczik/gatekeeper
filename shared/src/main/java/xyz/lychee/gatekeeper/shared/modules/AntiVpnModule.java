@@ -3,7 +3,6 @@ package xyz.lychee.gatekeeper.shared.modules;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
-import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.RandomUtils;
@@ -28,6 +27,8 @@ public class AntiVpnModule extends AbstractModule {
     private final List<Provider> providers = new ArrayList<>();
     private Semaphore semaphore;
     private int timeout;
+    private int checks_per_player;
+    private int block_threshold;
     private boolean blacklist_asn;
     private boolean whitelist_localhost;
 
@@ -41,7 +42,7 @@ public class AntiVpnModule extends AbstractModule {
             return false;
         }
 
-        if (this.providers.isEmpty()) {
+        if (this.providers.isEmpty() || this.checks_per_player <= 0) {
             return false;
         }
 
@@ -51,18 +52,6 @@ public class AntiVpnModule extends AbstractModule {
         if (cached != null) {
             return cached;
         }
-
-        int index = roundRobinIndex.getAndUpdate(i -> (i + 1) % this.providers.size());
-        Provider provider = this.providers.get(index);
-
-        String urlStr = provider.getUrl().replace("%address%", connection.getAddress().getHostAddress());
-
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(urlStr))
-                .timeout(Duration.ofMillis(this.timeout))
-                .GET();
-
-        provider.getHeaders().forEach(requestBuilder::header);
 
         CompletableFuture<Boolean> pendingFuture = this.pendingFutures.get(id);
         if (pendingFuture != null) {
@@ -80,34 +69,73 @@ public class AntiVpnModule extends AbstractModule {
         }
 
         try {
-            CompletableFuture<Boolean> future = TaskManager.INSTANCE.getHttpClient().sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
-                    .thenApply(response -> {
-                        this.pendingFutures.remove(id);
-                        int statusCode = response.statusCode();
-                        if (statusCode == 200) {
-                            boolean detected = provider.matches(response.body());
-                            this.checked.put(id, detected);
-                            if (detected && this.blacklist_asn) {
-                                GeoipManager.INSTANCE.getBlacklistedAsns().add(connection.getAsn());
-                            } else {
-                                GeoipManager.INSTANCE.getBlacklistedProxies().add(connection.getAddressData());
-                            }
-                            return detected;
-                        }
-                        return false;
-                    })
-                    .exceptionally(t -> {
-                        this.pendingFutures.remove(id);
-                        return false;
-                    });
+            CompletableFuture<Boolean> aggregatedFuture = new CompletableFuture<>();
+            this.pendingFutures.put(id, aggregatedFuture);
 
-            this.pendingFutures.put(id, future);
-            return future.join();
+            // using map to avoid duplicated providers
+            Map<String, Provider> selectedProviders = new HashMap<>();
+            int totalProviders = this.providers.size();
+            int startIdx = roundRobinIndex.getAndUpdate(i -> (i + 1) % totalProviders);
+            for (int i = 0; i < this.checks_per_player; i++) {
+                int idx = (startIdx + i) % totalProviders;
+                Provider provider = this.providers.get(idx);
+                selectedProviders.put(provider.getName(), provider);
+            }
+
+            String address = connection.getAddress().getHostAddress();
+
+            List<CompletableFuture<Boolean>> checkFutures = selectedProviders
+                    .values()
+                    .stream()
+                    .map(provider -> this.performSingleCheck(provider, address))
+                    .collect(Collectors.toList());
+
+            CompletableFuture<Void> allDone = CompletableFuture.allOf(
+                    checkFutures.toArray(new CompletableFuture[0])
+            );
+
+            allDone.whenComplete((v, ex) -> {
+                long positiveCount = checkFutures.stream()
+                        .filter(f -> f.join() != null && f.join())
+                        .count();
+                boolean blocked = positiveCount >= this.block_threshold;
+
+                this.checked.put(id, blocked);
+                this.pendingFutures.remove(id);
+
+                aggregatedFuture.complete(blocked);
+            });
+
+            return aggregatedFuture.join();
         } finally {
             if (this.semaphore != null) {
                 this.semaphore.release();
             }
         }
+    }
+
+    private CompletableFuture<Boolean> performSingleCheck(Provider provider, String address) {
+        String urlStr = provider.getUrl().replace("%address%", address);
+
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(urlStr))
+                .timeout(Duration.ofMillis(this.timeout))
+                .GET();
+
+        provider.getHeaders().forEach(requestBuilder::header);
+
+        return TaskManager.INSTANCE.getHttpClient()
+                .sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
+                    if (response.statusCode() == 200) {
+                        return provider.matches(response.body());
+                    }
+                    return false;
+                })
+                .exceptionally(t -> {
+                    getGatekeeper().logger().log(Level.FINE, "VPN check failed for " + provider.getName(), t);
+                    return false;
+                });
     }
 
     @Override
@@ -127,8 +155,9 @@ public class AntiVpnModule extends AbstractModule {
 
         int max_concurrent_checks = this.getConfig().getInt("max_concurrent_checks");
         this.semaphore = max_concurrent_checks > 0 ? new Semaphore(max_concurrent_checks) : null;
-
         this.whitelist_localhost = this.getConfig().getBoolean("whitelist_localhost");
+        this.checks_per_player = this.getConfig().getInt("checks_per_player");
+        this.block_threshold = this.getConfig().getInt("block_threshold");
 
         boolean needSave = false;
 
