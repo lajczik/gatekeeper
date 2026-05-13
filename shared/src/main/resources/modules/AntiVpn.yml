@@ -8,20 +8,12 @@ kick:
   - "&#C7C7C7Your internet provider is blocked, make sure your VPN is turned off."
 values:
   max_concurrent_checks: 30
-  read_timeout: 1000
-  connect_timeout: 500
+  timeout: 2500
   blacklist_asn: true
 
-  whitelist:
-    - "127.0.0.1"
-    - "0:0:0:0:0:0:0:1"
-    - "localhost"
-    - "172.17.0.1"
-    - "172.18.0.1"
-    - "172.19.0.1"
-    - "192.168.1.1"
-    - "192.168.0.1"
-    - "10.0.0.1"
+  # 0.0.0.0, 127.0.0.1 etc.
+  # To add your own address to the whitelist/blacklist, use the command /gatekeeper <whitelist/blacklist> add <ipv4>
+  whitelist_localhost: true
 
   checks:
     # https://proxycheck.io/
@@ -34,7 +26,8 @@ values:
     proxycheck_io:
       enabled: true
       url: "https://proxycheck.io/v1/%address%" # If you want to use key, you need to add "?key={API_KEY}"
-      condition: "proxy=yes"
+      condition:
+        json: "proxy=yes"
 
     # https://funkemunky.cc/
     #
@@ -42,7 +35,8 @@ values:
     funkemunky_cc:
       enabled: true
       url: "https://funkemunky.cc/vpn?ip=%address%"
-      condition: "accuracyRadius>500"
+      condition:
+        json: "accuracyRadius>500"
 
     # https://ip-api.com/
     #
@@ -50,7 +44,8 @@ values:
     ip-api_com:
       enabled: true
       url: "http://ip-api.com/json/%address%?fields=proxy,hosting"
-      condition: "hosting=true|proxy=true"
+      condition:
+        json: "hosting=true|proxy=true"
 
     # https://ipapi.is/
     #
@@ -59,7 +54,8 @@ values:
     ipapi_is:
       enabled: true
       url: "https://api.ipapi.is/?q=%address%"
-      condition: "is_vpn=true|is_proxy=true"
+      condition:
+        json: "is_vpn=true|is_proxy=true"
 
     # https://ipapi.is/
     #
@@ -67,7 +63,8 @@ values:
     zombiebot_pl:
       enabled: true
       url: "https://antivpn.zombiebot.pl/check/%address%"
-      condition: "vpn=true"
+      condition:
+        json: "vpn=true"
 
     # https://vpnapi.io/
     #
@@ -77,9 +74,10 @@ values:
     #
     # Get a free key here: https://vpnapi.io/signup
     vpnapi_io:
-      enabled: false
+      enabled: true
       url: "https://vpnapi.io/api/%address%" # If you want to use key, you need to add "?key={API_KEY}"
-      condition: "security:vpn=true|security:proxy=true"
+      condition:
+        json: "security:vpn=true|security:proxy=true"
 
     # https://iphub.info/
     #
@@ -92,7 +90,8 @@ values:
       url: "https://v2.api.iphub.info/ip/%address%"
       headers:
         - "X-Key:{API_KEY}"
-      condition: "block=1"
+      condition:
+        json: "block=1"
 
     # https://www.ipqualityscore.com/
     #
@@ -103,4 +102,211 @@ values:
     ipqualityscore_com:
       enabled: false
       url: "https://ipqualityscore.com/api/json/ip/{API_KEY}/%address%?strictness=0&allow_public_access_points=false"
-      condition: "fraud_score>75"
+      condition:
+        json: "fraud_score>75"
+
+    # 2ip.io (JSON, free 10k/month)
+    2ip_io:
+      enabled: false
+      url: "https://api.2ip.io/%address%?token={API_KEY}"
+      condition:
+        json: "asn:hosting=true"
+
+    # AbuseIPDB (JSON, free 1k/day)
+    abuseipdb_com:
+      enabled: false
+      url: "https://api.abuseipdb.com/api/v2/check?ipAddress=%address%"
+      headers:
+        - "Key:{API_KEY}"
+        - "Accept:application/json"
+      condition:
+        json: "data.isTor=true|data.abuseConfidenceScore>=75"
+
+    # ANTIVPN IO (PAID, JSON)
+    antivpn_io:
+      enabled: false
+      url: "https://connection.antivpn.io/api/check?ip=%address%"
+      headers:
+        - "Authorization:Bearer {API_KEY}"
+      condition:
+        json: "VPN=true"
+
+    # BanProxy (JSON, free 50/min)
+    banproxy_com:
+      enabled: false
+      url: "https://banproxy.com/api/%address%/{API_KEY}"
+      condition:
+        json: "proxy=true|hosting=true"
+
+    # BlackBox
+    blackbox_ipinfo:
+      enabled: false
+      url: "https://blackbox.ipinfo.app/lookup/%address%"
+      condition:
+        text: "equals=Y"
+
+    # Focsec (PAID, JSON)
+    focsec_com:
+      enabled: false
+      url: "https://api.focsec.com/v1/ip/%address%"
+      headers:
+        - "Authorization:{API_KEY}"
+      condition:
+        json: "is_vpn=true|is_proxy=true|is_tor=true|is_datacenter=true"
+
+    # FreeIPAPI (JSON, free 60/min without key)
+    freeipapi_com:
+      enabled: true
+      url: "https://freeipapi.com/api/json/%address%"
+      condition:
+        json: "isProxy=true"
+
+    # GetIPIntel (JSON, requires email as key)
+    getipintel_net:
+      enabled: false
+      url: "https://check.getipintel.net/check.php?ip=%address%&contact={API_KEY}&flags=m&format=json"
+      condition:
+        json: "result=true"
+
+    greip_io:
+      enabled: false
+      url: "https://greipapi.com/lookup/ip/threats?ip=%address%"
+      headers:
+        - "Authorization:Bearer {API_KEY}"
+      condition:
+        json: "data:threats:isProxy=true|data:threats:isRelay=true|data:threats:isTor=true|data:threats:isHosting=true"
+
+    ip_check_net:
+      enabled: true
+      url: "https://ip-check.net/api/proxy-detect.php?ip=%address%"
+      condition:
+        text: "equals=TRUE"
+
+    ip2location_io:
+      enabled: false
+      url: "https://api.ip2location.io/?ip=%address%&format=json&key={API_KEY}"
+      condition:
+        json: "is_proxy=true|proxy:is_vpn=true|proxy:is_tor=true|proxy:is_public_proxy=true|proxy:is_data_center=true"
+
+    ipdetective_io:
+      enabled: false
+      url: "https://api.ipdetective.io/ip/%address%?info=true"
+      headers:
+        - "x-api-key:{API_KEY}"
+      condition:
+        json: "type=vpn|type=datacenter|type=bot|type=proxy"
+
+    ipgeolocation_io:
+      enabled: false
+      url: "https://api.ipgeolocation.io/ipgeo?apiKey={API_KEY}&ip=%address%"
+      condition:
+        json: "security:is_tor=true|security:is_proxy=true|security:is_cloud_provider=true|security:is_known_attacker=true|security:is_anonymous=true"
+
+    iphunter_info:
+      enabled: false
+      url: "https://www.iphunter.info:8082/v1/ip/%address%"
+      headers:
+        - "X-Key:{API_KEY}"
+      condition:
+        json: "data:block=true"
+
+    iplocate_io:
+      enabled: true
+      url: "https://iplocate.io/api/lookup/%address%" # If you want to use key, you need to add "?apikey={API_KEY}"
+      condition:
+        json: "privacy:is_abuser=true|privacy:is_hosting=true|privacy:is_proxy=true|privacy:is_tor=true|privacy:is_vpn=true"
+
+    ipquery_io:
+      enabled: true
+      url: "https://api.ipquery.io/%address%?format=json"
+      condition:
+        json: "risk:is_vpn=true|risk:is_tor=true|risk:is_datacenter=true|risk:is_proxy=true"
+
+    iprisk_info:
+      enabled: true
+      url: "https://api.iprisk.info/v1/%address%"
+      condition:
+        json: "vpn=true|data_center=true|open_proxy=true"
+
+    ipstack_com:
+      enabled: false
+      url: "https://api.ipstack.com/%address%?access_key={API_KEY}&security=1"
+      condition:
+        json: "security:is_proxy=true|security:is_tor=true|security:hosting_facility=true"
+
+    isproxyip_com:
+      enabled: false
+      url: "https://api.isproxyip.com/v1/check.php?key={API_KEY}&ip=%address%&format=json"
+      condition:
+        json: "proxy=true"
+
+    marvinmc_dev:
+      enabled: true
+      url: "https://marvinmc.dev/proxy?ip=%address%"
+      condition:
+        text: "equals=true"
+
+    merakistudios_dev:
+      enabled: true
+      url: "https://pav.merakistudios.dev/api/%address%?key={API_KEY}"
+      condition:
+        json: "suspiciousLevel=2"
+
+    negativity_fr:
+      enabled: true
+      url: "https://api.negativity.fr/ip/%address%"
+      condition:
+        json: "proxy=1|vpn=1|hosting=1"
+
+    noproxy_okaeri:
+      enabled: false
+      url: "https://api.noproxy.okaeri.cloud/v1/%address%"
+      headers:
+        - "Authorization:{API_KEY}"
+      condition:
+        json: "score:noproxy>=75|score:abuseipdb>=75"
+
+    protectcord_com:
+      enabled: false
+      url: "https://api.protectcord.com/checkip/%address%?key={API_KEY}"
+      condition:
+        json: "is_datacenter=true|is_tor=true|is_proxy=true|is_vpn=true|is_abuser=true"
+
+    proxyradar_io:
+      enabled: false
+      url: "https://proxyradar.io/v1/check?key={API_KEY}&ip=%address%&format=json"
+      condition:
+        json: "proxy=true"
+
+    rayzs_de:
+      enabled: true
+      url: "https://www.rayzs.de/provpn/api/proxy.php/?a=%address%"
+      condition:
+        text: "equals=true"
+
+    # SkyDB (JSON, very slow)
+    skydb_de:
+      enabled: false
+      url: "http://ipcheck.skydb.de/getinfo?ip=%address%"
+      condition:
+        json: "Hosting=true|Proxy=true|VPN=true|TOR=true"
+
+    veloraplugins_online:
+      enabled: false
+      url: "https://veloraplugins.online/check/%address%?license={API_KEY}"
+      condition:
+        json: "score>=75|decision=DENY"
+
+    vpnblocker_net:
+      enabled: false
+      url: "https://api.vpnblocker.net/v2/json/%address%"
+      headers:
+        - "X-API-KEY:{API_KEY}"
+      condition:
+        json: "host-ip=true"
+
+    zowicentral_gay:
+      enabled: true
+      url: "https://api.zowi.gay/%address%" # If you want to use key, you need to add ?key={API_KEY}
+      condition:
+        json: "malicious=true|security:vpn=true|security:proxy=true|security:hosting=true|security:residential_proxy:detected=true|security:tor=true"
