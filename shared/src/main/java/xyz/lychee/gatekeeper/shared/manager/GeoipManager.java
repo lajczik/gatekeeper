@@ -4,7 +4,6 @@ import dev.dejvokep.boostedyaml.YamlDocument;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
-import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPBuilder;
 import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPDatabase;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 import xyz.lychee.gatekeeper.shared.util.RandomUtils;
@@ -26,9 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,8 +62,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
         this.proxySources.addAll(yaml.getStringList("main.auto_updater.proxy_sources"));
         Collections.shuffle(this.proxySources, RandomUtils.RANDOM);
 
-        this.download();
-
+        this.download(true).join();
         return true;
     }
 
@@ -96,110 +93,143 @@ public class GeoipManager extends AbstractManager implements Runnable {
 
     @Override
     public void run() {
-        this.download();
+        this.download(false);
     }
 
-    public void download() {
+    public CompletableFuture<Void> download(boolean firstLoad) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         if (this.needUpdate(this.geoDataPath)) {
-            BinaryGeoIPBuilder.buildDatabase(this.logger, this.geoDataPath)
-                    .thenCompose(v -> this.database.load(this.logger, this.geoDataPath));
+            this.logger.info(" &8• &rDownloading and building GeoIP database...");
+            futures.add(
+                    this.database.update(this.logger, this.geoDataPath)
+                            .thenAccept(timing ->
+                                    this.logger.info(" &8• &rDownloaded " + this.database.getCountryRecordCount()+ " country and " + this.database.getAsnRecordCount() + " asn ranges in "+timing.stop().getExecutingTime()+"ms!")
+                            )
+            );
         }
-        else {
-            this.database.load(this.logger, this.geoDataPath);
+        else if (firstLoad) {
+            this.logger.info(" &8• &rLoading GeoIP database from "+this.geoDataPath+"...");
+            futures.add(
+                    this.database.load(this.logger, this.geoDataPath)
+                            .thenAccept(timing ->
+                                    this.logger.info(" &8• &rLoaded " + this.database.getCountryRecordCount()+ " country and " + this.database.getAsnRecordCount() + " asn ranges in "+timing.stop().getExecutingTime()+"ms!")
+                            )
+            );
         }
 
-        this.downloadFromSource(
-                " &8• &rDownloading suspicious ASNs from " + this.asnSource.size() + " sources...",
-                " &8• &rDownloaded %amount% suspicious ASNs in %time%ms!",
-                " &8• &rLoaded %amount% suspicious ASNs in %time%ms!",
-                this.asnSource,
-                this.blacklistedAsns,
-                this.asnDataPath,
-                ASN_PATTERN,
-                str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null
-        );
+        if (this.needUpdate(this.asnDataPath)) {
+            this.logger.info(" &8• &rDownloading suspicious ASNs from "+this.asnSource.size()+" sources...");
+            futures.add(
+                    this.downloadFromSources(
+                            this.asnSource,
+                            this.blacklistedAsns,
+                            this.asnDataPath,
+                            ASN_PATTERN,
+                            str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null
+                    ).thenAccept(timing ->
+                            this.logger.info(" &8• &rDownloaded "+this.blacklistedAsns.size()+" suspicious ASNs in "+timing.stop().getExecutingTime()+"ms!")
+                    )
+            );
+        }
+        else if (firstLoad) {
+            this.logger.info(" &8• &rLoading suspicious ASNs from "+this.asnDataPath+"...");
+            futures.add(
+                    this.loadFromFile(
+                            this.asnDataPath,
+                            this.blacklistedAsns
+                    ).thenAccept(timing ->
+                            this.logger.info(" &8• &rLoaded "+this.blacklistedAsns.size()+" suspicious ASNs in "+timing.stop().getExecutingTime()+"ms!")
+                    )
+            );
+        }
 
-        this.downloadFromSource(
-                " &8• &rDownloading suspicious IPs from " + this.proxySources.size() + " sources...",
-                " &8• &rDownloaded %amount% suspicious IPs in %time%ms!",
-                " &8• &rLoaded %amount% suspicious IPs in %time%ms!",
-                this.proxySources,
-                this.blacklistedProxies,
-                this.proxyDataPath,
-                IP_PATTERN,
-                str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null
-        );
+        if (this.needUpdate(this.proxyDataPath)) {
+            this.logger.info(" &8• &rDownloading suspicious IPs from "+this.proxySources.size()+" sources...");
+            futures.add(
+                    this.downloadFromSources(
+                            this.proxySources,
+                            this.blacklistedProxies,
+                            this.proxyDataPath,
+                            IP_PATTERN,
+                            str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null
+                    ).thenAccept(timing ->
+                            this.logger.info(" &8• &rDownloaded "+this.blacklistedProxies.size()+" suspicious IPs in "+timing.stop().getExecutingTime()+"ms!")
+                    )
+            );
+        }
+        else if (firstLoad) {
+            this.logger.info(" &8• &rLoading suspicious IPs from "+this.proxyDataPath+"...");
+            futures.add(
+                    this.loadFromFile(
+                            this.proxyDataPath,
+                            this.blacklistedProxies
+                    ).thenAccept(timing ->
+                            this.logger.info(" &8• &rLoaded "+this.blacklistedProxies.size()+" suspicious IPs in "+timing.stop().getExecutingTime()+"ms!")
+                    )
+            );
+        }
+
+        return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
     }
 
-    public void downloadFromSource(
-            String downloadingLog,
-            String downloadedLog,
-            String loadedLog,
+    public CompletableFuture<TimingUtil> downloadFromSources(
             List<String> sources,
             Set<Integer> outputSet,
             Path outputPath,
             Pattern pattern,
             Function<String, Integer> parser
     ) {
-        TimingUtil t = TimingUtil.startNew();
-        if (this.needUpdate(outputPath)) {
-            this.logger.info(downloadingLog);
+        TimingUtil timing = TimingUtil.startNew();
+        return CompletableFuture.allOf(
+                        sources.stream().map(source -> {
+                            HttpRequest request = HttpRequest.newBuilder()
+                                    .uri(URI.create(source))
+                                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
+                                    .GET()
+                                    .build();
 
-            CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
-
-            Executor delayed = CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, TaskManager.INSTANCE.getCallbackExecutor());
-
-            for (String source : sources) {
-                future = future.thenCompose(v -> {
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(source))
-                            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
-                            .GET()
-                            .build();
-
-                    CompletableFuture<HttpResponse<String>> responseFuture =
-                            TaskManager.INSTANCE.getHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString());
-
-                    return responseFuture
-                            .exceptionally(err -> null)
-                            .thenAcceptAsync(response -> {
-                                if (response != null && response.statusCode() == 200) {
-                                    Matcher matcher = pattern.matcher(response.body());
-                                    while (matcher.find()) {
-                                        String group = matcher.group();
-                                        Integer parsed = parser.apply(group);
-                                        if (parsed != null) {
-                                            outputSet.add(parsed);
+                            return TaskManager.INSTANCE.getHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                                    .thenAccept(response -> {
+                                        if (response.statusCode() != 200) {
+                                            this.logger.warning(" &8• &eReceived "+response.statusCode()+" status code from source: &6" + source);
+                                            return;
                                         }
-                                    }
-                                }
-                            }, delayed);
-                });
-            }
 
-            future.thenRun(() -> {
-                byte[] serialized = SerializeUtils.serialize(outputSet);
-                try {
-                    Files.write(outputPath, serialized);
-                } catch (IOException ignored) {}
+                                        Matcher matcher = pattern.matcher(response.body());
+                                        while (matcher.find()) {
+                                            Integer parsed = parser.apply(matcher.group());
+                                            if (parsed != null) {
+                                                outputSet.add(parsed);
+                                            }
+                                        }
+                                    })
+                                    .exceptionally(ex -> {
+                                        this.logger.log(Level.WARNING, " &8• &cError while downloading data from " + source, ex);
+                                        return null;
+                                    });
+                        }).toArray(CompletableFuture[]::new)
+                )
+                .thenApplyAsync(v -> {
+                    byte[] serialized = SerializeUtils.serialize(outputSet);
+                    try {
+                        Files.write(outputPath, serialized);
+                    } catch (IOException ex) {
+                        this.logger.log(Level.SEVERE, " &8• &cFailed to write data to " + outputPath, ex);
+                    }
+                    return timing;
+                }, TaskManager.INSTANCE.getAsyncExecutor());
+    }
 
-                this.logger.info(
-                        downloadedLog
-                                .replace("%amount%", Integer.toString(outputSet.size()))
-                                .replace("%time%", Long.toString(t.stop().getExecutingTime()))
-                );
-            });
-        } else {
+    public CompletableFuture<TimingUtil> loadFromFile(Path path, Set<Integer> outputSet) {
+        TimingUtil timing = TimingUtil.startNew();
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                SerializeUtils.deserialize(Files.readAllBytes(outputPath), outputSet);
-
-                this.logger.info(
-                        loadedLog
-                                .replace("%amount%", Integer.toString(outputSet.size()))
-                                .replace("%time%", Long.toString(t.stop().getExecutingTime()))
-                );
+                SerializeUtils.deserialize(Files.readAllBytes(path), outputSet);
+            } catch (IOException ex) {
+                this.logger.log(Level.SEVERE, " &8• &cFailed to read data from " + path, ex);
             }
-            catch (IOException ignored) {}
-        }
+            return timing;
+        }, TaskManager.INSTANCE.getAsyncExecutor());
     }
 }
