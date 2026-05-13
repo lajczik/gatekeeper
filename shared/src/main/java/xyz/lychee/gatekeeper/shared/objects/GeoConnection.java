@@ -14,6 +14,7 @@ public class GeoConnection {
     private final InetAddress address;
     private final String name;
     private final int addressData;
+    private final boolean localhost;
     private final String country;
     private final int asn;
     private volatile long timestamp = -1L;
@@ -23,6 +24,7 @@ public class GeoConnection {
         this.address = address;
         this.name = name;
         this.addressData = addressData;
+        this.localhost = address.isLoopbackAddress();
 
         BinaryGeoIPDatabase database = GeoipManager.INSTANCE.getDatabase();
         this.country = database.getCountryCode(this.addressData);
