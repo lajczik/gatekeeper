@@ -1,20 +1,15 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
-import com.grack.nanojson.JsonParser;
-import com.grack.nanojson.JsonParserException;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
+import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.manager.TaskManager;
-import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
-import xyz.lychee.gatekeeper.shared.objects.ConditionSet;
-import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
+import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -30,12 +25,11 @@ public class AntiVpnModule extends AbstractModule {
     private final Map<Integer, Boolean> checked = new ConcurrentHashMap<>();
     private final Map<Integer, CompletableFuture<Boolean>> pendingFutures = new ConcurrentHashMap<>();
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
-    private final Set<String> whitelist = new HashSet<>();
-    private final List<ConditionSet.Provider> providers = new ArrayList<>();
+    private final List<Provider> providers = new ArrayList<>();
     private Semaphore semaphore;
-    private int connect_timeout;
-    private int read_timeout;
+    private int timeout;
     private boolean blacklist_asn;
+    private boolean whitelist_localhost;
 
     public AntiVpnModule(Gatekeeper<?> gatekeeper) {
         super(gatekeeper, "AntiVpn");
@@ -43,6 +37,10 @@ public class AntiVpnModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
+        if (this.whitelist_localhost && connection.isLocalhost()) {
+            return false;
+        }
+
         if (this.providers.isEmpty()) {
             return false;
         }
@@ -54,20 +52,14 @@ public class AntiVpnModule extends AbstractModule {
             return cached;
         }
 
-        String ip = connection.getAddress().getHostAddress();
-        if (this.whitelist.contains(ip)) {
-            this.checked.put(id, Boolean.FALSE);
-            return false;
-        }
-
         int index = roundRobinIndex.getAndUpdate(i -> (i + 1) % this.providers.size());
-        ConditionSet.Provider provider = this.providers.get(index);
+        Provider provider = this.providers.get(index);
 
-        String urlStr = provider.getUrl().replace("%address%", ip);
+        String urlStr = provider.getUrl().replace("%address%", connection.getAddress().getHostAddress());
 
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(urlStr))
-                .timeout(Duration.ofMillis(this.connect_timeout + this.read_timeout))
+                .timeout(Duration.ofMillis(this.timeout))
                 .GET();
 
         provider.getHeaders().forEach(requestBuilder::header);
@@ -88,21 +80,19 @@ public class AntiVpnModule extends AbstractModule {
         }
 
         try {
-            CompletableFuture<Boolean> future = TaskManager.INSTANCE.getHttpClient().sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
+            CompletableFuture<Boolean> future = TaskManager.INSTANCE.getHttpClient().sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
                     .thenApply(response -> {
                         this.pendingFutures.remove(id);
                         int statusCode = response.statusCode();
                         if (statusCode == 200) {
-                            try (InputStream is = response.body()) {
-                                boolean detected = provider.matches(JsonParser.object().from(is));
-                                this.checked.put(id, detected);
-                                if (detected && this.blacklist_asn) {
-                                    GeoipManager.INSTANCE.getBlacklistedAsns().add(connection.getAsn());
-                                } else {
-                                    GeoipManager.INSTANCE.getBlacklistedProxies().add(connection.getAddressData());
-                                }
-                                return detected;
-                            } catch (IOException | JsonParserException ignored) {}
+                            boolean detected = provider.matches(response.body());
+                            this.checked.put(id, detected);
+                            if (detected && this.blacklist_asn) {
+                                GeoipManager.INSTANCE.getBlacklistedAsns().add(connection.getAsn());
+                            } else {
+                                GeoipManager.INSTANCE.getBlacklistedProxies().add(connection.getAddressData());
+                            }
+                            return detected;
                         }
                         return false;
                     })
@@ -132,44 +122,85 @@ public class AntiVpnModule extends AbstractModule {
 
     @Override
     public boolean load() throws IOException {
-        this.whitelist.clear();
-        this.providers.clear();
-
-        this.connect_timeout = this.getConfig().getInt("connect_timeout");
-        this.read_timeout = this.getConfig().getInt("read_timeout");
+        this.timeout = this.getConfig().getInt("timeout");
         this.blacklist_asn = this.getConfig().getBoolean("blacklist_asn");
 
         int max_concurrent_checks = this.getConfig().getInt("max_concurrent_checks");
         this.semaphore = max_concurrent_checks > 0 ? new Semaphore(max_concurrent_checks) : null;
 
-        this.whitelist.addAll(this.getConfig().getStringList("whitelist"));
+        this.whitelist_localhost = this.getConfig().getBoolean("whitelist_localhost");
 
+        boolean needSave = false;
+        
         for (Object key : this.getConfig().getSection("checks").getKeys()) {
             Section section = this.getConfig().getSection("checks." + key);
-            if (section.getBoolean("enabled", false)) {
-                String condStr = section.getString("condition", null);
-                String url = section.getString("url", "");
+            String url = section.getString("url");
+            if (url == null || url.isBlank() || !section.getBoolean("enabled")) continue;
 
-                Map<String, String> headers = section.getStringList("headers", Collections.emptyList()).stream()
-                        .map(h -> h.split(":", 2))
-                        .filter(parts -> parts.length == 2)
-                        .collect(Collectors.toMap(
-                                parts -> parts[0].trim(),
-                                parts -> parts[1].trim(),
-                                (existing, replacement) -> replacement
-                        ));
+            if (section.isString("condition")) {
+                section.set("condition.json", section.getString("condition"));
+                needSave = true;
+            }
 
-                ConditionSet cs = condStr != null ? ConditionSet.compile(condStr) : null;
-                this.providers.add(new ConditionSet.Provider(Objects.toString(key), url, headers, cs));
+            Map<String, String> headers = section.getStringList("headers", Collections.emptyList()).stream()
+                    .map(h -> h.split(":", 2))
+                    .filter(parts -> parts.length == 2)
+                    .collect(Collectors.toMap(
+                            parts -> parts[0].trim(),
+                            parts -> parts[1].trim(),
+                            (existing, replacement) -> replacement
+                    ));
+
+            AbstractConditionSet conditionSet = null;
+            if (section.contains("condition.json")) {
+                String conditionJson = section.getString("condition.json");
+                if (conditionJson != null) {
+                    conditionSet = JsonConditionSet.compile(conditionJson);
+                }
+            }
+            else if (section.contains("condition.text")) {
+                String conditionText = section.getString("condition.text");
+                if (conditionText != null) {
+                    conditionSet = TextConditionSet.compile(conditionText);
+                }
+            }
+
+            if (conditionSet != null) {
+                this.providers.add(new Provider(Objects.toString(key), url, headers, conditionSet));
             }
         }
+
         Collections.shuffle(this.providers, RandomUtils.RANDOM);
+        
+        if (needSave) {
+            this.getYamlDocument().save();
+        }
 
         return true;
     }
 
     @Override
     public boolean unload() {
+        this.providers.clear();
         return true;
+    }
+
+    @Getter
+    public static final class Provider {
+        private final String name;
+        private final String url;
+        private final Map<String, String> headers;
+        private final AbstractConditionSet condition;
+
+        public Provider(String name, String url, Map<String, String> headers, AbstractConditionSet condition) {
+            this.name = name;
+            this.url = url;
+            this.headers = headers;
+            this.condition = condition;
+        }
+
+        public boolean matches(String str) {
+            return condition.evaluate(str);
+        }
     }
 }
