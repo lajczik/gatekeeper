@@ -19,12 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,11 +33,11 @@ public class GeoipManager extends AbstractManager implements Runnable {
     public static final GeoipManager INSTANCE = new GeoipManager();
     private static final Pattern ASN_PATTERN = Pattern.compile("\\d{4,6}");
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
-    private final Set<Integer> blacklistedAsns = ConcurrentHashMap.newKeySet();
-    private final Set<Integer> blacklistedProxies = ConcurrentHashMap.newKeySet();
     private final List<String> asnSource = new ArrayList<>();
     private final List<String> proxySources = new ArrayList<>();
     private final BinaryGeoIPDatabase database = new BinaryGeoIPDatabase();
+    private volatile Set<Integer> blacklistedAsns = Collections.emptySet();
+    private volatile Set<Integer> blacklistedProxies = Collections.emptySet();
     private Logger logger;
     private Path geoDataPath;
     private Path asnDataPath;
@@ -121,10 +118,10 @@ public class GeoipManager extends AbstractManager implements Runnable {
             futures.add(
                     this.downloadFromSources(
                             this.asnSource,
-                            this.blacklistedAsns,
                             this.asnDataPath,
                             ASN_PATTERN,
-                            str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null
+                            str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null,
+                            outputSet -> this.blacklistedAsns = outputSet
                     ).thenAccept(timing ->
                             this.logger.info(" &8• &rDownloaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + timing.stop().getExecutingTime() + "ms!")
                     )
@@ -134,7 +131,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
             futures.add(
                     this.loadFromFile(
                             this.asnDataPath,
-                            this.blacklistedAsns
+                            outputSet -> this.blacklistedAsns = outputSet
                     ).thenAccept(timing ->
                             this.logger.info(" &8• &rLoaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + timing.stop().getExecutingTime() + "ms!")
                     )
@@ -146,10 +143,10 @@ public class GeoipManager extends AbstractManager implements Runnable {
             futures.add(
                     this.downloadFromSources(
                             this.proxySources,
-                            this.blacklistedProxies,
                             this.proxyDataPath,
                             IP_PATTERN,
-                            str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null
+                            str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null,
+                            outputSet -> this.blacklistedProxies = outputSet
                     ).thenAccept(timing ->
                             this.logger.info(" &8• &rDownloaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop().getExecutingTime() + "ms!")
                     )
@@ -159,7 +156,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
             futures.add(
                     this.loadFromFile(
                             this.proxyDataPath,
-                            this.blacklistedProxies
+                            outputSet -> this.blacklistedProxies = outputSet
                     ).thenAccept(timing ->
                             this.logger.info(" &8• &rLoaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop().getExecutingTime() + "ms!")
                     )
@@ -171,11 +168,12 @@ public class GeoipManager extends AbstractManager implements Runnable {
 
     public CompletableFuture<TimingUtil> downloadFromSources(
             List<String> sources,
-            Set<Integer> outputSet,
             Path outputPath,
             Pattern pattern,
-            Function<String, Integer> parser
+            Function<String, Integer> parser,
+            Consumer<Set<Integer>> consumer
     ) {
+        Set<Integer> outputSet = new HashSet<>();
         TimingUtil timing = TimingUtil.startNew();
         return CompletableFuture.allOf(
                         sources.stream().map(source -> {
@@ -192,12 +190,18 @@ public class GeoipManager extends AbstractManager implements Runnable {
                                             return;
                                         }
 
+                                        Set<Integer> localSet = new HashSet<>();
+
                                         Matcher matcher = pattern.matcher(response.body());
                                         while (matcher.find()) {
                                             Integer parsed = parser.apply(matcher.group());
                                             if (parsed != null) {
-                                                outputSet.add(parsed);
+                                                localSet.add(parsed);
                                             }
+                                        }
+
+                                        synchronized (outputSet) {
+                                            outputSet.addAll(localSet);
                                         }
                                     })
                                     .exceptionally(ex -> {
@@ -213,18 +217,21 @@ public class GeoipManager extends AbstractManager implements Runnable {
                     } catch (IOException ex) {
                         this.logger.log(Level.SEVERE, " &8• &cFailed to write data to " + outputPath, ex);
                     }
+                    consumer.accept(Collections.unmodifiableSet(outputSet));
                     return timing;
                 }, TaskManager.INSTANCE.getAsyncExecutor());
     }
 
-    public CompletableFuture<TimingUtil> loadFromFile(Path path, Set<Integer> outputSet) {
+    public CompletableFuture<TimingUtil> loadFromFile(Path path, Consumer<Set<Integer>> consumer) {
         TimingUtil timing = TimingUtil.startNew();
         return CompletableFuture.supplyAsync(() -> {
+            Set<Integer> outputSet = new HashSet<>();
             try {
                 SerializeUtils.deserialize(Files.readAllBytes(path), outputSet);
             } catch (IOException ex) {
                 this.logger.log(Level.SEVERE, " &8• &cFailed to read data from " + path, ex);
             }
+            consumer.accept(Collections.unmodifiableSet(outputSet));
             return timing;
         }, TaskManager.INSTANCE.getAsyncExecutor());
     }
