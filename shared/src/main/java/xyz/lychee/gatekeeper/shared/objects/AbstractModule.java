@@ -19,6 +19,7 @@ import java.util.Collections;
 public abstract class AbstractModule {
     private final Gatekeeper<?> gatekeeper;
     private final String name;
+    private YamlDocument yamlDocument;
     private Section config;
     private boolean loaded = false;
     private int priority;
@@ -54,27 +55,27 @@ public abstract class AbstractModule {
 
         File configFile = new File(this.gatekeeper.dataFolder(), resourcePath);
 
-        YamlDocument yaml = YamlDocument.create(
+        this.yamlDocument = YamlDocument.create(
                 configFile,
                 this.gatekeeper.resource(resourcePath),
                 GeneralSettings.DEFAULT,
                 LoaderSettings.builder().setAutoUpdate(true).build(),
                 DumperSettings.DEFAULT
         );
-        yaml.save();
+        this.yamlDocument.save();
 
-        if (!yaml.getBoolean("enabled")) {
+        if (!this.yamlDocument.getBoolean("enabled")) {
             return false;
         }
 
-        this.config = yaml.getSection("values");
+        this.config = this.yamlDocument.getSection("values");
 
-        this.priority = yaml.getInt("priority");
+        this.priority = this.yamlDocument.getInt("priority");
 
-        String log = yaml.getString("log", "");
+        String log = this.yamlDocument.getString("log", "");
         this.logMessage = log.isEmpty() ? null : log;
 
-        String kick = String.join("\n", yaml.getStringList("kick", Collections.emptyList()));
+        String kick = String.join("\n", this.yamlDocument.getStringList("kick", Collections.emptyList()));
         this.kickMessage = this.gatekeeper.language().color(kick, true);
 
         return this.load();
