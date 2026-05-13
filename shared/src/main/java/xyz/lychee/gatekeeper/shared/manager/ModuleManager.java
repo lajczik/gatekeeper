@@ -59,7 +59,7 @@ public class ModuleManager extends AbstractManager {
                 boolean success = module.loadAllConfig();
                 if (success) {
                     this.loadedChecks.add(module);
-                    module.getGatekeeper().logger().info(" &8• &rSuccessfully reloaded module " + module.getName() + " in " + t.stop().getExecutingTime() + "ms.");
+                    module.getGatekeeper().logger().info(" &8• &rSuccessfully loaded module " + module.getName() + " in " + t.stop().getExecutingTime() + "ms.");
                 }
                 module.setLoaded(success);
             } catch (Exception ex) {
