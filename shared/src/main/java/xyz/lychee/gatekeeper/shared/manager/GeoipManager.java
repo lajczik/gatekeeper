@@ -85,8 +85,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
             Instant updateThreshold = Instant.now().minus(12, ChronoUnit.HOURS);
             Instant fileModified = Files.getLastModifiedTime(dataFile).toInstant();
             return fileModified.compareTo(updateThreshold) < 0;
-        }
-        catch (IOException ignored) {
+        } catch (IOException ignored) {
             return true;
         }
     }
@@ -104,22 +103,21 @@ public class GeoipManager extends AbstractManager implements Runnable {
             futures.add(
                     this.database.update(this.logger, this.geoDataPath)
                             .thenAccept(timing ->
-                                    this.logger.info(" &8• &rDownloaded " + this.database.getCountryRecordCount()+ " country and " + this.database.getAsnRecordCount() + " asn ranges in "+timing.stop().getExecutingTime()+"ms!")
+                                    this.logger.info(" &8• &rDownloaded " + this.database.getCountryRecordCount() + " country and " + this.database.getAsnRecordCount() + " asn ranges in " + timing.stop().getExecutingTime() + "ms!")
                             )
             );
-        }
-        else if (firstLoad) {
-            this.logger.info(" &8• &rLoading GeoIP database from "+this.geoDataPath+"...");
+        } else if (firstLoad) {
+            this.logger.info(" &8• &rLoading GeoIP database from " + this.geoDataPath + "...");
             futures.add(
                     this.database.load(this.logger, this.geoDataPath)
                             .thenAccept(timing ->
-                                    this.logger.info(" &8• &rLoaded " + this.database.getCountryRecordCount()+ " country and " + this.database.getAsnRecordCount() + " asn ranges in "+timing.stop().getExecutingTime()+"ms!")
+                                    this.logger.info(" &8• &rLoaded " + this.database.getCountryRecordCount() + " country and " + this.database.getAsnRecordCount() + " asn ranges in " + timing.stop().getExecutingTime() + "ms!")
                             )
             );
         }
 
         if (this.needUpdate(this.asnDataPath)) {
-            this.logger.info(" &8• &rDownloading suspicious ASNs from "+this.asnSource.size()+" sources...");
+            this.logger.info(" &8• &rDownloading suspicious ASNs from " + this.asnSource.size() + " sources...");
             futures.add(
                     this.downloadFromSources(
                             this.asnSource,
@@ -128,24 +126,23 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             ASN_PATTERN,
                             str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null
                     ).thenAccept(timing ->
-                            this.logger.info(" &8• &rDownloaded "+this.blacklistedAsns.size()+" suspicious ASNs in "+timing.stop().getExecutingTime()+"ms!")
+                            this.logger.info(" &8• &rDownloaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + timing.stop().getExecutingTime() + "ms!")
                     )
             );
-        }
-        else if (firstLoad) {
-            this.logger.info(" &8• &rLoading suspicious ASNs from "+this.asnDataPath+"...");
+        } else if (firstLoad) {
+            this.logger.info(" &8• &rLoading suspicious ASNs from " + this.asnDataPath + "...");
             futures.add(
                     this.loadFromFile(
                             this.asnDataPath,
                             this.blacklistedAsns
                     ).thenAccept(timing ->
-                            this.logger.info(" &8• &rLoaded "+this.blacklistedAsns.size()+" suspicious ASNs in "+timing.stop().getExecutingTime()+"ms!")
+                            this.logger.info(" &8• &rLoaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + timing.stop().getExecutingTime() + "ms!")
                     )
             );
         }
 
         if (this.needUpdate(this.proxyDataPath)) {
-            this.logger.info(" &8• &rDownloading suspicious IPs from "+this.proxySources.size()+" sources...");
+            this.logger.info(" &8• &rDownloading suspicious IPs from " + this.proxySources.size() + " sources...");
             futures.add(
                     this.downloadFromSources(
                             this.proxySources,
@@ -154,18 +151,17 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             IP_PATTERN,
                             str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null
                     ).thenAccept(timing ->
-                            this.logger.info(" &8• &rDownloaded "+this.blacklistedProxies.size()+" suspicious IPs in "+timing.stop().getExecutingTime()+"ms!")
+                            this.logger.info(" &8• &rDownloaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop().getExecutingTime() + "ms!")
                     )
             );
-        }
-        else if (firstLoad) {
-            this.logger.info(" &8• &rLoading suspicious IPs from "+this.proxyDataPath+"...");
+        } else if (firstLoad) {
+            this.logger.info(" &8• &rLoading suspicious IPs from " + this.proxyDataPath + "...");
             futures.add(
                     this.loadFromFile(
                             this.proxyDataPath,
                             this.blacklistedProxies
                     ).thenAccept(timing ->
-                            this.logger.info(" &8• &rLoaded "+this.blacklistedProxies.size()+" suspicious IPs in "+timing.stop().getExecutingTime()+"ms!")
+                            this.logger.info(" &8• &rLoaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop().getExecutingTime() + "ms!")
                     )
             );
         }
@@ -192,7 +188,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             return TaskManager.INSTANCE.getHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString())
                                     .thenAccept(response -> {
                                         if (response.statusCode() != 200) {
-                                            this.logger.warning(" &8• &eReceived "+response.statusCode()+" status code from source: &6" + source);
+                                            this.logger.warning(" &8• &eReceived " + response.statusCode() + " status code from source: &6" + source);
                                             return;
                                         }
 

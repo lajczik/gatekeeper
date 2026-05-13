@@ -4,11 +4,9 @@ import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
-import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -114,8 +112,7 @@ public final class JsonConditionSet extends AbstractConditionSet {
                     }
                 }
             }
-        }
-        catch (JsonParserException ignored) {}
+        } catch (JsonParserException ignored) {}
         return false;
     }
 

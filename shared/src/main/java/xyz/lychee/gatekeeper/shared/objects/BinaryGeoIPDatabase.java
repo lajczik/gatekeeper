@@ -80,8 +80,7 @@ public class BinaryGeoIPDatabase {
 
                 this.countryRangeCache = this.readAllCountryRanges();
                 this.asnRangeCache = this.readAllASNRanges();
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 logger.log(Level.SEVERE, "Error reading geo database file", ex);
             }
             return timing;

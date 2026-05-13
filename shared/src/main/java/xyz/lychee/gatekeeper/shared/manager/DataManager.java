@@ -40,8 +40,7 @@ public class DataManager extends AbstractManager implements Runnable {
 
         if (Files.notExists(this.dataPath)) {
             Files.createDirectories(this.dataPath.getParent());
-        }
-        else {
+        } else {
             this.loadFromFile();
         }
         return true;
@@ -111,12 +110,10 @@ public class DataManager extends AbstractManager implements Runnable {
         if (AddressUtils.isIpv4(target)) {
             int addressData = AddressUtils.ipv4ToInt(target);
             return this.addresses.getOrDefault(addressData, (byte) 0);
-        }
-        else if (RandomUtils.isInteger(target)) {
+        } else if (RandomUtils.isInteger(target)) {
             int asn = Integer.parseInt(target);
             return this.asns.getOrDefault(asn, (byte) 0);
-        }
-        else {
+        } else {
             return this.nicknames.getOrDefault(target, (byte) 0);
         }
     }
@@ -131,7 +128,7 @@ public class DataManager extends AbstractManager implements Runnable {
         try {
             Files.writeString(this.dataPath, JsonWriter.string(json));
         } catch (IOException ex) {
-            this.logger.log(Level.SEVERE, "Failed to save database file "+this.dataPath.getFileName().toString(), ex);
+            this.logger.log(Level.SEVERE, "Failed to save database file " + this.dataPath.getFileName().toString(), ex);
         }
     }
 }

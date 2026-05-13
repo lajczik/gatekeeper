@@ -131,7 +131,7 @@ public class AntiVpnModule extends AbstractModule {
         this.whitelist_localhost = this.getConfig().getBoolean("whitelist_localhost");
 
         boolean needSave = false;
-        
+
         for (Object key : this.getConfig().getSection("checks").getKeys()) {
             Section section = this.getConfig().getSection("checks." + key);
             String url = section.getString("url");
@@ -157,8 +157,7 @@ public class AntiVpnModule extends AbstractModule {
                 if (conditionJson != null) {
                     conditionSet = JsonConditionSet.compile(conditionJson);
                 }
-            }
-            else if (section.contains("condition.text")) {
+            } else if (section.contains("condition.text")) {
                 String conditionText = section.getString("condition.text");
                 if (conditionText != null) {
                     conditionSet = TextConditionSet.compile(conditionText);
@@ -171,7 +170,7 @@ public class AntiVpnModule extends AbstractModule {
         }
 
         Collections.shuffle(this.providers, RandomUtils.RANDOM);
-        
+
         if (needSave) {
             this.getYamlDocument().save();
         }
