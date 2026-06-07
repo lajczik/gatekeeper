@@ -115,14 +115,19 @@ public class AntiVpnModule extends AbstractModule {
     }
 
     private CompletableFuture<Boolean> performSingleCheck(Provider provider, String address) {
-        String urlStr = provider.getUrl().replace("%address%", address);
+        String apiKey = provider.getApiKey() != null ? provider.getApiKey() : "";
+        String urlStr = provider.getUrl()
+                .replace("%address%", address)
+                .replace("{API_KEY}", apiKey);
 
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(urlStr))
                 .timeout(Duration.ofMillis(this.timeout))
                 .GET();
 
-        provider.getHeaders().forEach(requestBuilder::header);
+        Map<String, String> resolvedHeaders = new HashMap<>(provider.getHeaders().size());
+        provider.getHeaders().forEach((k, v) -> resolvedHeaders.put(k, v.replace("{API_KEY}", apiKey)));
+        resolvedHeaders.forEach(requestBuilder::header);
 
         return TaskManager.INSTANCE.getHttpClient()
                 .sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
@@ -193,8 +198,10 @@ public class AntiVpnModule extends AbstractModule {
                 }
             }
 
+            String apiKey = section.getString("token");
+
             if (conditionSet != null) {
-                this.providers.add(new Provider(Objects.toString(key), url, headers, conditionSet));
+                this.providers.add(new Provider(Objects.toString(key), url, apiKey, headers, conditionSet));
             }
         }
 
@@ -217,12 +224,14 @@ public class AntiVpnModule extends AbstractModule {
     public static final class Provider {
         private final String name;
         private final String url;
+        private final String apiKey;
         private final Map<String, String> headers;
         private final AbstractConditionSet condition;
 
-        public Provider(String name, String url, Map<String, String> headers, AbstractConditionSet condition) {
+        public Provider(String name, String url, String apiKey, Map<String, String> headers, AbstractConditionSet condition) {
             this.name = name;
             this.url = url;
+            this.apiKey = apiKey;
             this.headers = headers;
             this.condition = condition;
         }

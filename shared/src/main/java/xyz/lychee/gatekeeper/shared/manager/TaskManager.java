@@ -22,7 +22,7 @@ public class TaskManager extends AbstractManager {
     @Override
     public boolean load(Gatekeeper<?> plugin) {
         this.callbackExecutor = new ThreadPoolExecutor(
-                Runtime.getRuntime().availableProcessors(),
+                Math.max(1, Runtime.getRuntime().availableProcessors()),
                 128,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
@@ -35,7 +35,7 @@ public class TaskManager extends AbstractManager {
         );
 
         this.asyncExecutor = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors() / 2,
+                Math.max(1, Runtime.getRuntime().availableProcessors() / 2),
                 new SimpleThreadFactory("Gatekeeper-Worker")
         );
 
