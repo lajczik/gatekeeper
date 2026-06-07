@@ -30,7 +30,7 @@ values:
     #
     # Get a free key here: https://proxycheck.io/pricing/
     proxycheck_io:
-      enabled: true
+      enabled: false
       url: "https://proxycheck.io/v1/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       condition:
         json: "proxy=yes"
@@ -39,7 +39,7 @@ values:
     #
     # No Key: unlimited queries.
     funkemunky_cc:
-      enabled: true
+      enabled: false
       url: "https://funkemunky.cc/vpn?ip=%address%"
       condition:
         json: "accuracyRadius>500"
@@ -48,7 +48,7 @@ values:
     #
     # No Key: unlimited queries. (45 req/min)
     ip-api_com:
-      enabled: true
+      enabled: false
       url: "http://ip-api.com/json/%address%?fields=proxy,hosting"
       condition:
         json: "hosting=true|proxy=true"
@@ -58,7 +58,7 @@ values:
     # Free Key 1,000 daily queries.
     # Paid Key: 20k-2m daily queries.
     ipapi_is:
-      enabled: true
+      enabled: false
       url: "https://api.ipapi.is/?q=%address%"
       condition:
         json: "is_vpn=true|is_proxy=true|is_abuser=true"
@@ -67,7 +67,7 @@ values:
     #
     # No Key: unlimited queries.
     zombiebot_pl:
-      enabled: true
+      enabled: false
       url: "https://antivpn.zombiebot.pl/check/%address%"
       condition:
         json: "vpn=true"
@@ -80,7 +80,7 @@ values:
     #
     # Get a free key here: https://vpnapi.io/signup
     vpnapi_io:
-      enabled: true
+      enabled: false
       url: "https://vpnapi.io/api/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       condition:
         json: "security:vpn=true|security:proxy=true"
@@ -162,7 +162,7 @@ values:
 
     # FreeIPAPI (JSON, free 60/min without key)
     freeipapi_com:
-      enabled: true
+      enabled: false
       url: "https://freeipapi.com/api/json/%address%"
       condition:
         json: "isProxy=true"
@@ -183,7 +183,7 @@ values:
         json: "data:threats:isProxy=true|data:threats:isRelay=true|data:threats:isTor=true|data:threats:isHosting=true"
 
     ip_check_net:
-      enabled: true
+      enabled: false
       url: "https://ip-check.net/api/proxy-detect.php?ip=%address%"
       condition:
         text: "equals=TRUE"
@@ -217,19 +217,19 @@ values:
         json: "data:block=true"
 
     iplocate_io:
-      enabled: true
+      enabled: false
       url: "https://iplocate.io/api/lookup/%address%" # If you want to use key, you need to add "?apikey={API_KEY}"
       condition:
         json: "privacy:is_abuser=true|privacy:is_hosting=true|privacy:is_proxy=true|privacy:is_tor=true|privacy:is_vpn=true"
 
     ipquery_io:
-      enabled: true
+      enabled: false
       url: "https://api.ipquery.io/%address%?format=json"
       condition:
         json: "risk:is_vpn=true|risk:is_tor=true|risk:is_datacenter=true|risk:is_proxy=true"
 
     iprisk_info:
-      enabled: true
+      enabled: false
       url: "https://api.iprisk.info/v1/%address%"
       condition:
         json: "vpn=true|data_center=true|open_proxy=true"
@@ -247,19 +247,19 @@ values:
         json: "proxy=true"
 
     marvinmc_dev:
-      enabled: true
+      enabled: false
       url: "https://marvinmc.dev/proxy?ip=%address%"
       condition:
         text: "equals=true"
 
     merakistudios_dev:
-      enabled: true
+      enabled: false
       url: "https://pav.merakistudios.dev/api/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       condition:
         json: "suspiciousLevel=2"
 
     negativity_fr:
-      enabled: true
+      enabled: false
       url: "https://api.negativity.fr/ip/%address%"
       condition:
         json: "proxy=1|vpn=1|hosting=1"
@@ -285,7 +285,7 @@ values:
         json: "proxy=true"
 
     rayzs_de:
-      enabled: true
+      enabled: false
       url: "https://www.rayzs.de/provpn/api/proxy.php/?a=%address%"
       condition:
         text: "equals=true"
@@ -312,7 +312,7 @@ values:
         json: "host-ip=true"
 
     zowicentral_gay:
-      enabled: true
+      enabled: false
       url: "https://api.zowi.gay/%address%" # If you want to use key, you need to add ?key={API_KEY}
       condition:
         json: "malicious=true|security:vpn=true|security:proxy=true|security:hosting=true|security:residential_proxy:detected=true|security:tor=true"
