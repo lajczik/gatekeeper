@@ -54,12 +54,12 @@ public class SpongeListeners extends ListenerHandler {
 
         UpdaterManager updater = UpdaterManager.INSTANCE;
         if (player.hasPermission("gatekeeper.admin") && updater.getCompared() < 0 && updater.isUpdater()) {
-
             Task task = Task.builder()
                     .delay(Ticks.of(60L))
-                    .execute(() ->
-                            player.sendMessage(this.plugin.language().message("messages.updater", updater.getLatestVersion(), updater.getLatestVersion()))
-                    )
+                    .execute(() -> {
+                        this.plugin.commandPlayer(player)
+                                .sendMessage(this.plugin.language(), "messages.updater", updater.getLatestVersion(), updater.getLatestVersion());
+                    })
                     .plugin(this.plugin.getContainer())
                     .build();
 

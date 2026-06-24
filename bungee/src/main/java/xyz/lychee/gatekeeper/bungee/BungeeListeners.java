@@ -28,10 +28,10 @@ public class BungeeListeners extends ListenerHandler implements Listener {
 
         UpdaterManager updater = UpdaterManager.INSTANCE;
         if (e.getPlayer().hasPermission("gatekeeper.updater") && updater.getCompared() < 0 && updater.isUpdater()) {
-            this.plugin.getProxy().getScheduler().schedule(this.plugin, () ->
-                            e.getPlayer().sendMessage(
-                                    this.plugin.language().message("messages.updater", updater.getLatestVersion(), updater.getLatestVersion())
-                            ),
+            this.plugin.getProxy().getScheduler().schedule(this.plugin, () -> {
+                        this.plugin.commandPlayer(e.getPlayer())
+                                .sendMessage(this.plugin.language(), "messages.updater", updater.getLatestVersion(), updater.getLatestVersion());
+                    },
                     3,
                     TimeUnit.SECONDS
             );

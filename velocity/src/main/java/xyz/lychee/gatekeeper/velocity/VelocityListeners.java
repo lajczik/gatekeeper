@@ -25,13 +25,10 @@ public class VelocityListeners extends ListenerHandler {
 
             UpdaterManager updater = UpdaterManager.INSTANCE;
             if (e.getPlayer().hasPermission("gatekeeper.updater") && updater.getCompared() < 0 && updater.isUpdater()) {
-                this.plugin.getProxy().getScheduler().buildTask(this.plugin, () ->
-                                e.getPlayer().sendMessage(
-                                        this.plugin.language().message("messages.updater", updater.getLatestVersion(), updater.getLatestVersion())
-                                )
-                        )
-                        .delay(3, TimeUnit.SECONDS)
-                        .schedule();
+                this.plugin.getProxy().getScheduler().buildTask(this.plugin, () -> {
+                    this.plugin.commandPlayer(e.getPlayer())
+                            .sendMessage(this.plugin.language(), "messages.updater", updater.getLatestVersion(), updater.getLatestVersion());
+                }).delay(3, TimeUnit.SECONDS).schedule();
             }
         });
     }

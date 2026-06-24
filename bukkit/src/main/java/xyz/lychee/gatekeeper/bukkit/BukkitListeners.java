@@ -41,11 +41,10 @@ public class BukkitListeners extends ListenerHandler implements Listener {
 
         UpdaterManager updater = UpdaterManager.INSTANCE;
         if (e.getPlayer().isOp() && updater.getCompared() < 0 && updater.isUpdater()) {
-            Bukkit.getScheduler().runTaskLaterAsynchronously(this.plugin, () ->
-                    e.getPlayer().sendMessage(
-                            this.plugin.language().message("messages.updater", updater.getLatestVersion(), updater.getLatestVersion())
-                    ), 60L
-            );
+            Bukkit.getScheduler().runTaskLaterAsynchronously(this.plugin, () -> {
+                this.plugin.commandPlayer(e.getPlayer())
+                        .sendMessage(this.plugin.language(), "messages.updater", updater.getLatestVersion(), updater.getLatestVersion());
+            }, 60L);
         }
     }
 
