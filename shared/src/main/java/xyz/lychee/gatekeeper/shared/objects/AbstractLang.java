@@ -10,14 +10,24 @@ import org.jetbrains.annotations.Nullable;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 @Getter
 public abstract class AbstractLang<T> {
+    private static final Map<String, String> REPLACEMENTS;
+
+    static {
+        REPLACEMENTS = Map.of(
+                "{*}", "•",
+                "{>>}", "»",
+                "{<<}", "«"
+        );
+    }
+
     private final Gatekeeper<T> gatekeeper;
+    private final HashMap<String, String> strings = new HashMap<>();
     private final HashMap<String, T> components = new HashMap<>();
     private YamlDocument yaml;
 
@@ -37,6 +47,9 @@ public abstract class AbstractLang<T> {
 
             this.yaml.save();
 
+            this.strings.clear();
+            this.components.clear();
+
             Set<String> keys = new HashSet<>();
             collect(this.yaml, "", keys);
             for (String key : keys) {
@@ -44,7 +57,7 @@ public abstract class AbstractLang<T> {
                 this.components.put(key, this.color(text, true));
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            this.gatekeeper.logger().log(Level.SEVERE, "Failed to load language", ex);
         }
     }
 
@@ -63,7 +76,7 @@ public abstract class AbstractLang<T> {
 
     public abstract T color(String text, boolean prefix);
 
-    public abstract T hover(String text, String hoverText);
+    public abstract T hoverAndOpenUrl(String text, String hoverText, String url);
 
     public T message(String key, String... placeholders) {
         if (placeholders != null && placeholders.length > 0) {
@@ -77,7 +90,7 @@ public abstract class AbstractLang<T> {
             return this.color(message, true);
         }
 
-        return this.components.get(key);
+        return this.getComponent(key);
     }
 
     public @Nullable T getComponent(String key) {
@@ -85,6 +98,25 @@ public abstract class AbstractLang<T> {
     }
 
     public @Nullable String getString(String key) {
-        return this.yaml.getString(key);
+        return this.strings.computeIfAbsent(key, s -> {
+            String text;
+            if (this.yaml.isList(key)) {
+                text = this.yaml.getList(key)
+                        .stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining("\n"));
+            } else {
+                text = this.yaml.getString(key);
+            }
+
+            return applyReplacements(text);
+        });
+    }
+
+    public static String applyReplacements(String text) {
+        for (Map.Entry<String, String> entry : REPLACEMENTS.entrySet()) {
+            text = text.replace(entry.getKey(), entry.getValue());
+        }
+        return text;
     }
 }
