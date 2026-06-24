@@ -40,7 +40,7 @@ public interface Gatekeeper<T> {
                 this.logger().info("&8(&b" + manager.getClass().getSimpleName() + "&8) &7-> &fEnabling manager...");
                 t.start();
                 manager.load(this);
-                this.logger().info("&8(&b" + manager.getClass().getSimpleName() + "&8) &7-> &fEnabled manager in &b" + t.stop().getExecutingTime() + "ms&f!");
+                this.logger().info("&8(&b" + manager.getClass().getSimpleName() + "&8) &7-> &fEnabled manager in &b" + t.stop() + "&f!");
             } catch (Exception ex) {
                 this.logger().log(Level.SEVERE, ex.getMessage(), ex);
             }
@@ -56,7 +56,7 @@ public interface Gatekeeper<T> {
                 this.logger().info("&8(&b" + manager.getClass().getSimpleName() + "&8) &7-> &fDisabling manager...");
                 t.start();
                 manager.unload(this);
-                this.logger().info("&8(&b" + manager.getClass().getSimpleName() + "&8) &7-> &fDisabled manager in &b" + t.stop().getExecutingTime() + "ms&f!");
+                this.logger().info("&8(&b" + manager.getClass().getSimpleName() + "&8) &7-> &fDisabled manager in &b" + t.stop() + "&f!");
             } catch (Exception ex) {
                 this.logger().log(Level.SEVERE, ex.getMessage(), ex);
             }
@@ -72,6 +72,6 @@ public interface Gatekeeper<T> {
                 this.logger().log(Level.SEVERE, ex.getMessage(), ex);
             }
         }
-        this.logger().info("Reloaded gatekeeper in &b" + t.stop().getExecutingTime() + "ms&f!");
+        this.logger().info("Reloaded gatekeeper in &b" + t.stop() + "&f!");
     }
 }
