@@ -1,10 +1,12 @@
+import org.apache.tools.ant.types.CharSet
+
 plugins {
     id("java")
     id("com.gradleup.shadow") version "9.4.1"
 }
 
 group = "xyz.lychee.gatekeeper"
-version = "1.6"
+version = "1.6.2"
 
 dependencies {
     implementation(project(":shared", "shadow"))
@@ -51,28 +53,8 @@ allprojects {
 
     tasks {
         compileJava {
-            options.encoding = "UTF-8"
+            options.encoding = Charsets.UTF_8.name()
             //options.release = 8
-        }
-
-        processResources {
-            filesMatching("**/plugin.yml") {
-                expand(rootProject.project.properties)
-            }
-            filesMatching("**/bungee.yml") {
-                expand(rootProject.project.properties)
-            }
-            filesMatching("**/velocity-plugin.json") {
-                expand(rootProject.project.properties)
-            }
-            filesMatching("**/paper-plugin.yml") {
-                expand(rootProject.project.properties)
-            }
-            filesMatching("**/sponge_plugins.json") {
-                expand(rootProject.project.properties)
-            }
-
-            outputs.upToDateWhen { false }
         }
     }
 
