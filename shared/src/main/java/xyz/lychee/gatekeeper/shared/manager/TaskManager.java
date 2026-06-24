@@ -21,8 +21,10 @@ public class TaskManager extends AbstractManager {
 
     @Override
     public boolean load(Gatekeeper<?> plugin) {
+        int cores = Runtime.getRuntime().availableProcessors();
+
         this.callbackExecutor = new ThreadPoolExecutor(
-                Runtime.getRuntime().availableProcessors(),
+                cores,
                 128,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
@@ -30,13 +32,18 @@ public class TaskManager extends AbstractManager {
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
 
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(
+        this.scheduler = new ScheduledThreadPoolExecutor(
+                1,
                 new SimpleThreadFactory("Gatekeeper-Scheduler")
         );
 
-        this.asyncExecutor = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors() / 2,
-                new SimpleThreadFactory("Gatekeeper-Worker")
+        this.asyncExecutor = new ThreadPoolExecutor(
+                Math.max(1, cores / 2),
+                Math.max(1, cores / 2),
+                0, TimeUnit.MILLISECONDS,
+                new SynchronousQueue<>(),
+                new SimpleThreadFactory("Gatekeeper-Worker"),
+                new ThreadPoolExecutor.CallerRunsPolicy()
         );
 
         this.httpClient = HttpClient.newBuilder()
