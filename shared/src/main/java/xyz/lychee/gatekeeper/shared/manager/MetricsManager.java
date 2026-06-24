@@ -6,7 +6,6 @@ import dev.dejvokep.boostedyaml.YamlDocument;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.PlatformData;
-import xyz.lychee.gatekeeper.shared.util.RandomUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -65,8 +64,8 @@ public class MetricsManager extends AbstractManager {
         // submit delay or frequency!
         // WARNING: Modifying this code will get your plugin banned on bStats. Just
         // don't do it!
-        long initialDelay = 1000 * 60 * (3 + RandomUtils.RANDOM.nextInt(3));
-        long secondDelay = 1000 * 60 * RandomUtils.RANDOM.nextInt(30);
+        long initialDelay = (long) (1000 * 60 * (3 + Math.random() * 3));
+        long secondDelay = (long) (1000 * 60 * (Math.random() * 30));
         TaskManager.INSTANCE.getScheduler().schedule(this::submitData, initialDelay, TimeUnit.MILLISECONDS);
         TaskManager.INSTANCE.getScheduler().scheduleAtFixedRate(this::submitData, initialDelay + secondDelay, 1000 * 60 * 30, TimeUnit.MILLISECONDS);
     }

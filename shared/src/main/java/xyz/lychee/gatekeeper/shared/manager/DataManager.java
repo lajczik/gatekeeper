@@ -10,7 +10,7 @@ import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.EnumAccess;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -110,7 +110,7 @@ public class DataManager extends AbstractManager implements Runnable {
         if (AddressUtils.isIpv4(target)) {
             int addressData = AddressUtils.ipv4ToInt(target);
             return this.addresses.getOrDefault(addressData, (byte) 0);
-        } else if (RandomUtils.isInteger(target)) {
+        } else if (MathUtils.isInteger(target)) {
             int asn = Integer.parseInt(target);
             return this.asns.getOrDefault(asn, (byte) 0);
         } else {

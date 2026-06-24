@@ -4,7 +4,7 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.MathUtils;
 import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
 import java.io.BufferedReader;
@@ -132,7 +132,7 @@ public class BinaryGeoIPDatabase {
                             int end = (int) ipRange[1];
 
                             String asnStr = line.substring(firstComma + 1, secondComma);
-                            if (!asnStr.isEmpty() && RandomUtils.isInteger(asnStr)) {
+                            if (!asnStr.isEmpty() && MathUtils.isInteger(asnStr)) {
                                 int asn = Integer.parseInt(asnStr);
                                 asnRanges.add(new GeoRange<>(start, end, asn));
                             }

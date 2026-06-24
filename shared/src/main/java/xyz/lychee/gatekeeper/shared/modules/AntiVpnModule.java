@@ -5,7 +5,7 @@ import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.objects.*;
-import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.MathUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -198,7 +198,7 @@ public class AntiVpnModule extends AbstractModule {
             }
         }
 
-        Collections.shuffle(this.providers, RandomUtils.RANDOM);
+        Collections.shuffle(this.providers);
 
         if (needSave) {
             this.getYamlDocument().save();

@@ -6,7 +6,7 @@ import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 import xyz.lychee.gatekeeper.shared.objects.BinaryGeoIPDatabase;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.MathUtils;
 import xyz.lychee.gatekeeper.shared.util.SerializeUtils;
 import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 
@@ -53,11 +53,11 @@ public class GeoipManager extends AbstractManager implements Runnable {
         YamlDocument yaml = ConfigManager.INSTANCE.getYaml();
         this.asnSource.clear();
         this.asnSource.addAll(yaml.getStringList("main.auto_updater.asn_sources"));
-        Collections.shuffle(this.asnSource, RandomUtils.RANDOM);
+        Collections.shuffle(this.asnSource);
 
         this.proxySources.clear();
         this.proxySources.addAll(yaml.getStringList("main.auto_updater.proxy_sources"));
-        Collections.shuffle(this.proxySources, RandomUtils.RANDOM);
+        Collections.shuffle(this.proxySources);
 
         this.download(true).join();
         return true;
@@ -99,16 +99,16 @@ public class GeoipManager extends AbstractManager implements Runnable {
             this.logger.info(" &8• &rDownloading and building GeoIP database...");
             futures.add(
                     this.database.update(this.logger, this.geoDataPath)
-                            .thenAccept(timing ->
-                                    this.logger.info(" &8• &rDownloaded " + this.database.getCountryRecordCount() + " country and " + this.database.getAsnRecordCount() + " asn ranges in " + timing.stop().getExecutingTime() + "ms!")
+                            .thenAccept(t ->
+                                    this.logger.info(" &8• &rDownloaded " + this.database.getCountryRecordCount() + " country and " + this.database.getAsnRecordCount() + " asn ranges in " + t.stop() + "!")
                             )
             );
         } else if (firstLoad) {
             this.logger.info(" &8• &rLoading GeoIP database from " + this.geoDataPath + "...");
             futures.add(
                     this.database.load(this.logger, this.geoDataPath)
-                            .thenAccept(timing ->
-                                    this.logger.info(" &8• &rLoaded " + this.database.getCountryRecordCount() + " country and " + this.database.getAsnRecordCount() + " asn ranges in " + timing.stop().getExecutingTime() + "ms!")
+                            .thenAccept(t ->
+                                    this.logger.info(" &8• &rLoaded " + this.database.getCountryRecordCount() + " country and " + this.database.getAsnRecordCount() + " asn ranges in " + t.stop() + "!")
                             )
             );
         }
@@ -120,10 +120,10 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             this.asnSource,
                             this.asnDataPath,
                             ASN_PATTERN,
-                            str -> RandomUtils.isInteger(str) ? Integer.parseInt(str) : null,
+                            str -> MathUtils.isInteger(str) ? Integer.parseInt(str) : null,
                             outputSet -> this.blacklistedAsns = outputSet
-                    ).thenAccept(timing ->
-                            this.logger.info(" &8• &rDownloaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + timing.stop().getExecutingTime() + "ms!")
+                    ).thenAccept(t ->
+                            this.logger.info(" &8• &rDownloaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + t.stop() + "!")
                     )
             );
         } else if (firstLoad) {
@@ -132,8 +132,8 @@ public class GeoipManager extends AbstractManager implements Runnable {
                     this.loadFromFile(
                             this.asnDataPath,
                             outputSet -> this.blacklistedAsns = outputSet
-                    ).thenAccept(timing ->
-                            this.logger.info(" &8• &rLoaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + timing.stop().getExecutingTime() + "ms!")
+                    ).thenAccept(t ->
+                            this.logger.info(" &8• &rLoaded " + this.blacklistedAsns.size() + " suspicious ASNs in " + t.stop() + "!")
                     )
             );
         }
@@ -148,7 +148,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             str -> AddressUtils.isIpv4(str) ? AddressUtils.ipv4ToInt(str) : null,
                             outputSet -> this.blacklistedProxies = outputSet
                     ).thenAccept(timing ->
-                            this.logger.info(" &8• &rDownloaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop().getExecutingTime() + "ms!")
+                            this.logger.info(" &8• &rDownloaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop() + "!")
                     )
             );
         } else if (firstLoad) {
@@ -158,7 +158,7 @@ public class GeoipManager extends AbstractManager implements Runnable {
                             this.proxyDataPath,
                             outputSet -> this.blacklistedProxies = outputSet
                     ).thenAccept(timing ->
-                            this.logger.info(" &8• &rLoaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop().getExecutingTime() + "ms!")
+                            this.logger.info(" &8• &rLoaded " + this.blacklistedProxies.size() + " suspicious IPs in " + timing.stop() + "!")
                     )
             );
         }

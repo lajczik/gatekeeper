@@ -24,7 +24,7 @@ import xyz.lychee.gatekeeper.shared.manager.ModuleManager;
 import xyz.lychee.gatekeeper.shared.modules.BlacklistModule;
 import xyz.lychee.gatekeeper.shared.objects.*;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
-import xyz.lychee.gatekeeper.shared.util.RandomUtils;
+import xyz.lychee.gatekeeper.shared.util.MathUtils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -143,7 +143,7 @@ public class VelocityMain implements Gatekeeper<Component> {
                                 .filter(player -> AddressUtils.isIpv4Equal(player.getRemoteAddress().getAddress(), addressData))
                                 .forEach(player -> player.disconnect(kickMessage));
                     }
-                } else if (RandomUtils.isInteger(target) && targetPlayer == null) {
+                } else if (MathUtils.isInteger(target) && targetPlayer == null) {
                     int asn = Integer.parseInt(target);
                     DataManager.INSTANCE.getAsns().put(asn, accessType);
                 } else {
