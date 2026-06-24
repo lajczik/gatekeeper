@@ -1,5 +1,3 @@
-import org.apache.tools.ant.types.CharSet
-
 plugins {
     id("java")
     id("com.gradleup.shadow") version "9.4.1"
