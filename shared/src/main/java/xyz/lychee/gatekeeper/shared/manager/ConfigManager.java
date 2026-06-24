@@ -6,6 +6,7 @@ import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
 import dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
+import xyz.lychee.gatekeeper.shared.objects.AbstractLang;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
 
 import java.io.File;
@@ -45,10 +46,14 @@ public class ConfigManager extends AbstractManager {
     }
 
     private void updatePrefix(Gatekeeper<?> plugin) {
-        String prefixString = this.yaml.getString("main.prefix");
+        String prefixString = AbstractLang.applyReplacements(this.yaml.getString("main.prefix"));
 
         if (this.yaml.getBoolean("main.prefix_hover")) {
-            this.prefix = plugin.language().hover(prefixString, prefixString + " &fGateKeeper &b" + plugin.platformData().getPluginVersion() + "\n &8{*} &7Click to open plugin in modrinth!");
+            this.prefix = plugin.language().hoverAndOpenUrl(
+                    prefixString,
+                    AbstractLang.applyReplacements(prefixString + " &fGateKeeper &b" + plugin.platformData().getPluginVersion() + "\n &8{*} &7Click to open plugin in modrinth!"),
+                    "https://modrinth.com/plugin/gatekeeper-mc/"
+            );
         } else {
             this.prefix = plugin.language().color(prefixString, false);
         }
