@@ -13,4 +13,11 @@ tasks {
     shadowJar {
         minimize()
     }
+    processResources {
+        filesMatching("**/velocity-plugin.json") {
+            expand(rootProject.project.properties)
+        }
+
+        outputs.upToDateWhen { false }
+    }
 }

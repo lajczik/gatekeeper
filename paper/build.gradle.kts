@@ -12,4 +12,11 @@ tasks {
     shadowJar {
         minimize()
     }
+    processResources {
+        filesMatching("**/paper-plugin.yml") {
+            expand(rootProject.project.properties)
+        }
+
+        outputs.upToDateWhen { false }
+    }
 }

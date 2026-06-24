@@ -12,4 +12,11 @@ tasks {
     shadowJar {
         minimize()
     }
+    processResources {
+        filesMatching("**/sponge_plugins.json") {
+            expand(rootProject.project.properties)
+        }
+
+        outputs.upToDateWhen { false }
+    }
 }

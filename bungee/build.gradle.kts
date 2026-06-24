@@ -12,4 +12,11 @@ tasks {
     shadowJar {
         minimize()
     }
+    processResources {
+        filesMatching("**/bungee.yml") {
+            expand(rootProject.project.properties)
+        }
+
+        outputs.upToDateWhen { false }
+    }
 }
