@@ -1,21 +1,25 @@
 package xyz.lychee.gatekeeper.shared.manager;
 
+import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonWriter;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
+import xyz.lychee.gatekeeper.shared.objects.ListenerHandler;
 import xyz.lychee.gatekeeper.shared.objects.PlatformData;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 
 public class MetricsManager extends AbstractManager {
     public static final MetricsManager INSTANCE = new MetricsManager();
+    private final Set<CustomChart> customCharts = new HashSet<>();
     private Gatekeeper<?> plugin;
     private String serverUuid;
 
@@ -36,6 +40,9 @@ public class MetricsManager extends AbstractManager {
             this.serverUuid = yaml.getString("main.bStats.uuid");
         }
 
+        this.customCharts.add(new SingleLineChart("checks", ListenerHandler::getChecks));
+        this.customCharts.add(new SingleLineChart("detections", ListenerHandler::getDetections));
+
         this.startSubmitting();
         return true;
     }
@@ -50,11 +57,6 @@ public class MetricsManager extends AbstractManager {
         return true;
     }
 
-    /*public void addCustomChart(CustomChart chart) {
-        metricsBase.addCustomChart(chart);
-    }*/
-
-    //
     public void startSubmitting() {
         // Many servers tend to restart at a fixed time at xx:00 which causes an uneven
         // distribution of requests on the
@@ -85,11 +87,11 @@ public class MetricsManager extends AbstractManager {
         JsonObject serviceJson = new JsonObject();
         serviceJson.put("id", platformData.getServiceId());
         serviceJson.put("pluginVersion", platformData.getPluginVersion());
-        /*JsonArray chartsJson = new JsonArray();
+        JsonArray chartsJson = new JsonArray();
         for (CustomChart chart : this.customCharts) {
             chartsJson.add(chart.getRequestJsonObject());
         }
-        serviceJson.put("customCharts", chartsJson);*/
+        serviceJson.put("customCharts", chartsJson);
 
         baseJson.put("service", serviceJson);
         baseJson.put("serverUUID", this.serverUuid);
@@ -108,5 +110,53 @@ public class MetricsManager extends AbstractManager {
                 .build();
 
         TaskManager.INSTANCE.getHttpClient().sendAsync(request, HttpResponse.BodyHandlers.discarding());
+    }
+
+    public static abstract class CustomChart {
+        private final String chartId;
+
+        protected CustomChart(String chartId) {
+            if (chartId == null) {
+                throw new IllegalArgumentException("chartId must not be null");
+            }
+            this.chartId = chartId;
+        }
+
+        public JsonObject getRequestJsonObject() {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.put("chartId", this.chartId);
+            try {
+                JsonObject data = this.getChartData();
+                if (data == null) {
+                    return null;
+                }
+                jsonObject.put("data", data);
+            } catch (Throwable t) {
+                return null;
+            }
+            return jsonObject;
+        }
+
+        protected abstract JsonObject getChartData();
+    }
+
+    public static class SingleLineChart extends CustomChart {
+        private final LongSupplier supplier;
+
+        public SingleLineChart(String chartId, LongSupplier supplier) {
+            super(chartId);
+            this.supplier = supplier;
+        }
+
+        @Override
+        protected JsonObject getChartData() {
+            long value = this.supplier.getAsLong();
+            if (value == 0) {
+                return null;
+            }
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.put("value", value);
+            return jsonObject;
+        }
     }
 }

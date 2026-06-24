@@ -8,8 +8,11 @@ import xyz.lychee.gatekeeper.shared.util.TimingUtil;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 
 public class ListenerHandler {
+    private static final LongAdder CHECKS = new LongAdder();
+    private static final LongAdder DETECTIONS = new LongAdder();
     private final Map<Integer, GeoConnection> connections = new ConcurrentHashMap<>();
 
     public void handleDisconnect(InetAddress address, String name) {
@@ -34,16 +37,31 @@ public class ListenerHandler {
         int addressData = AddressUtils.ipv4ToInt(address);
         GeoConnection connection = this.connections.computeIfAbsent(addressData, k -> new GeoConnection(address, addressData, name));
         connection.setTimestamp(System.currentTimeMillis());
+        CHECKS.increment();
+
         if (DataManager.INSTANCE.updateAndCheckAccess(connection, EnumAccess.WHITELIST)) {
             return null;
         }
 
         for (AbstractModule check : ModuleManager.INSTANCE.getLoadedChecks()) {
             if (check.handlePreLogin(connection)) {
+                DETECTIONS.increment();
                 check.printCheck(connection, t);
                 return check.getKickMessage();
             }
         }
         return null;
+    }
+
+    public static long getChecks() {
+        long checks = CHECKS.longValue();
+        CHECKS.reset();
+        return checks;
+    }
+
+    public static long getDetections() {
+        long detections = DETECTIONS.longValue();
+        DETECTIONS.reset();
+        return detections;
     }
 }
