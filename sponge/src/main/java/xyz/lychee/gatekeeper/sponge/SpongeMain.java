@@ -5,6 +5,7 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.apache.logging.log4j.Logger;
@@ -180,8 +181,10 @@ public class SpongeMain implements Gatekeeper<Component> {
         }
 
         @Override
-        public Component hover(String text, String hoverText) {
-            return this.color(text, false).hoverEvent(HoverEvent.showText(this.color(hoverText, false)));
+        public Component hoverAndOpenUrl(String text, String hoverText, String url) {
+            return this.color(text, false)
+                    .hoverEvent(HoverEvent.showText(this.color(hoverText, false)))
+                    .clickEvent(ClickEvent.openUrl(url));
         }
     }
 }

@@ -4,6 +4,7 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -185,12 +186,18 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
         }
 
         @Override
-        public BaseComponent hover(String text, String hoverText) {
+        public BaseComponent hoverAndOpenUrl(String text, String hoverText, String url) {
             BaseComponent component = this.color(text, false);
             component.setHoverEvent(
                     new HoverEvent(
                             HoverEvent.Action.SHOW_TEXT,
                             new BaseComponent[]{this.color(hoverText, false)}
+                    )
+            );
+            component.setClickEvent(
+                    new ClickEvent(
+                            ClickEvent.Action.OPEN_URL,
+                            url
                     )
             );
             return component;

@@ -146,7 +146,7 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
         }
 
         @Override
-        public String hover(String component, String text) {
+        public String hoverAndOpenUrl(String component, String text, String url) {
             return component;
         }
 
