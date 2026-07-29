@@ -31,7 +31,7 @@ public class RateLimitModule extends AbstractModule implements Runnable {
             return true;
         }
 
-        return this.ip_connect.get(connection.getAddressData()) + this.ip_limit > now;
+        return !connection.isLocalhost() && this.ip_connect.get(connection.getAddressData()) + this.ip_limit > now;
     }
 
     @Override

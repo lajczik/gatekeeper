@@ -13,9 +13,6 @@ values:
   timeout: 2500
   # Instead of blocking access to a single IP address, the internet provider will be blocked
   blacklist_asn: true
-  # 0.0.0.0, 127.0.0.1 etc.
-  # To add your own address to the whitelist/blacklist, use the command /gatekeeper <whitelist/blacklist> add <ipv4>
-  whitelist_localhost: true
   # Number of requests sent to different API providers (proxy/VPN check)
   checks_per_player: 3
   # Minimum APIs that must confirm that an IP is a VPN/Proxy

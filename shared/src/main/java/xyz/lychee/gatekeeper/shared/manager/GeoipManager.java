@@ -262,7 +262,9 @@ public class GeoipManager extends AbstractManager implements Runnable {
                                                     int mask = prefix == 0 ? 0 : 0xFFFFFFFF << (32 - prefix);
                                                     int startIp = ip & mask;
                                                     int endIp = startIp | ~mask;
-                                                    if (prefix >= 8) {
+                                                    // Ignore ranges overlaps on loopback (127.0.0.0/8)
+                                                    if (!(Integer.compareUnsigned(startIp, 0x7F000000) <= 0 && Integer.compareUnsigned(endIp, 0x7FFFFFFF) >= 0 ||
+                                                            (Integer.compareUnsigned(startIp, 0x7F000000) >= 0 && Integer.compareUnsigned(startIp, 0x7FFFFFFF) <= 0))) {
                                                         if (startIp == endIp) {
                                                             localSet.add(startIp);
                                                         } else {
@@ -271,7 +273,10 @@ public class GeoipManager extends AbstractManager implements Runnable {
                                                     }
                                                 }
                                             } else {
-                                                localSet.add(ip);
+                                                // Ignore loopback (127.0.0.0/8)
+                                                if ((ip >>> 24) != 0x7F) {
+                                                    localSet.add(ip);
+                                                }
                                             }
                                         }
                                     }

@@ -21,7 +21,7 @@ public class AccountLimitModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        if (this.accountLimitPerIp > 0) {
+        if (this.accountLimitPerIp > 0 && !connection.isLocalhost()) {
             LongAdder val = this.ip_connected.get(connection.getAddressData());
             return val != null && val.longValue() >= this.accountLimitPerIp;
         }

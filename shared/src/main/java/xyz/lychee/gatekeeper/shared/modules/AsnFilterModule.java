@@ -18,7 +18,8 @@ public class AsnFilterModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        return connection.getAsn() > 0
+        return !connection.isLocalhost()
+                && connection.getAsn() > 0
                 && (GeoipManager.INSTANCE.getBlacklistedAsns().contains(connection.getAsn()) || this.listedAsn.contains(connection.getAsn()) == this.list_mode);
     }
 

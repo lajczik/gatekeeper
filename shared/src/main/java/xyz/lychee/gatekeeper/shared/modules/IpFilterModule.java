@@ -19,8 +19,9 @@ public class IpFilterModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        return GeoipManager.INSTANCE.isBlacklistedProxy(connection.getAddressData())
-                || this.listedIps.contains(connection.getAddressData()) == this.list_mode;
+        return !connection.isLocalhost()
+                && (GeoipManager.INSTANCE.isBlacklistedProxy(connection.getAddressData())
+                || this.listedIps.contains(connection.getAddressData()) == this.list_mode);
     }
 
     @Override

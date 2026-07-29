@@ -29,7 +29,6 @@ public class AntiVpnModule extends AbstractModule {
     private int checks_per_player;
     private int block_threshold;
     private boolean blacklist_asn;
-    private boolean whitelist_localhost;
 
     public AntiVpnModule(Gatekeeper<?> gatekeeper) {
         super(gatekeeper, "AntiVpn");
@@ -37,7 +36,7 @@ public class AntiVpnModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        if (this.whitelist_localhost && connection.isLocalhost()) {
+        if (connection.isLocalhost()) {
             return false;
         }
 
@@ -153,7 +152,6 @@ public class AntiVpnModule extends AbstractModule {
 
         int max_concurrent_checks = this.getConfig().getInt("max_concurrent_checks");
         this.semaphore = max_concurrent_checks > 0 ? new Semaphore(max_concurrent_checks) : null;
-        this.whitelist_localhost = this.getConfig().getBoolean("whitelist_localhost");
         this.checks_per_player = this.getConfig().getInt("checks_per_player");
         this.block_threshold = this.getConfig().getInt("block_threshold");
 

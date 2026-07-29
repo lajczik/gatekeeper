@@ -16,7 +16,7 @@ public class CountryFilterModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        return this.list.contains(connection.getCountry()) == this.listMode;
+        return !connection.isLocalhost() && this.list.contains(connection.getCountry()) == this.listMode;
     }
 
     @Override
