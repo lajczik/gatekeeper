@@ -1,10 +1,10 @@
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "9.4.1"
+    id("com.gradleup.shadow") version "9.6.1"
 }
 
 group = "xyz.lychee.gatekeeper"
-version = "1.6.1"
+version = "1.6.2"
 
 dependencies {
     implementation(project(":shared", "shadow"))
