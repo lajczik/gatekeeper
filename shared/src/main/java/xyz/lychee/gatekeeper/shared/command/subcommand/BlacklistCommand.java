@@ -35,7 +35,8 @@ public class BlacklistCommand<T> extends PermissibleCommand<T> {
             return;
         }
 
-        byte targetAccess = DataManager.INSTANCE.resolveAccess(target);
+        DataManager dataManager = DataManager.INSTANCE;
+        byte targetAccess = dataManager.resolveAccess(target);
         EnumAccess newAccess = isAdd ? EnumAccess.BLACKLIST : EnumAccess.NULL;
 
         if (isAdd && EnumAccess.BLACKLIST.isEquals(targetAccess)) {
@@ -54,6 +55,7 @@ public class BlacklistCommand<T> extends PermissibleCommand<T> {
         } else {
             player.sendMessage(lang, "messages.blacklist.removed", target);
         }
+        dataManager.saveDataFile();
     }
 
     @NotNull

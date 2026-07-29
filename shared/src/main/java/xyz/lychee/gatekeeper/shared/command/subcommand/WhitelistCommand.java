@@ -35,7 +35,8 @@ public class WhitelistCommand<T> extends PermissibleCommand<T> {
             return;
         }
 
-        byte targetAccess = DataManager.INSTANCE.resolveAccess(target);
+        DataManager dataManager = DataManager.INSTANCE;
+        byte targetAccess = dataManager.resolveAccess(target);
         EnumAccess newAccess = isAdd ? EnumAccess.WHITELIST : EnumAccess.NULL;
 
         if (isAdd && EnumAccess.WHITELIST.isEquals(targetAccess)) {
@@ -54,6 +55,7 @@ public class WhitelistCommand<T> extends PermissibleCommand<T> {
         } else {
             player.sendMessage(lang, "messages.whitelist.removed", target);
         }
+        dataManager.saveDataFile();
     }
 
     @NotNull
