@@ -1,5 +1,8 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
@@ -9,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
 public class AccountLimitModule extends AbstractModule {
-    private final Map<Integer, LongAdder> ip_connected = new ConcurrentHashMap<>();
+    private final Int2ObjectMap<LongAdder> ip_connected = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
     private int accountLimitPerIp;
 
     public AccountLimitModule(Gatekeeper<?> gatekeeper) {

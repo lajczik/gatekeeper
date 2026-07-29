@@ -1,16 +1,15 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
 import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 public class AsnFilterModule extends AbstractModule {
-    private final Set<Integer> listedAsn = new HashSet<>();
+    private final IntOpenHashSet listedAsn = new IntOpenHashSet();
     private boolean list_mode;
 
     public AsnFilterModule(Gatekeeper<?> gatekeeper) {

@@ -1,11 +1,11 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
 import dev.dejvokep.boostedyaml.block.implementation.Section;
+import it.unimi.dsi.fastutil.ints.*;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.TaskManager;
 import xyz.lychee.gatekeeper.shared.objects.*;
-import xyz.lychee.gatekeeper.shared.util.MathUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -14,15 +14,14 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class AntiVpnModule extends AbstractModule {
-    private final Map<Integer, Boolean> checked = new ConcurrentHashMap<>();
-    private final Map<Integer, CompletableFuture<Boolean>> pendingFutures = new ConcurrentHashMap<>();
+    private final Int2BooleanMap checked = Int2BooleanMaps.synchronize(new Int2BooleanOpenHashMap());
+    private final Int2ObjectMap<CompletableFuture<Boolean>> pendingFutures = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
     private final List<Provider> providers = new ArrayList<>();
     private Semaphore semaphore;
@@ -48,9 +47,8 @@ public class AntiVpnModule extends AbstractModule {
 
         int id = this.blacklist_asn && connection.getAsn() > 0 ? connection.getAsn() : connection.getAddressData();
 
-        Boolean cached = this.checked.get(id);
-        if (cached != null) {
-            return cached;
+        if (this.checked.containsKey(id)) {
+            return this.checked.get(id);
         }
 
         CompletableFuture<Boolean> pendingFuture = this.pendingFutures.get(id);

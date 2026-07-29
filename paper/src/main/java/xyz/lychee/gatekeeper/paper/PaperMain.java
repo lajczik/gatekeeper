@@ -116,7 +116,7 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
 
                 if (AddressUtils.isIpv4(target)) {
                     int addressData = AddressUtils.ipv4ToInt(target);
-                    DataManager.INSTANCE.getAddresses().put(addressData, accessType);
+                    DataManager.INSTANCE.updateAddress(addressData, accessType);
                     if (newAccess == EnumAccess.BLACKLIST) {
                         Bukkit.getOnlinePlayers().stream()
                                 .filter(player -> AddressUtils.isIpv4Equal(player.getAddress().getAddress(), addressData))
@@ -124,9 +124,9 @@ public class PaperMain extends JavaPlugin implements Gatekeeper<Component>, List
                     }
                 } else if (MathUtils.isInteger(target) && targetPlayer == null) {
                     int asn = Integer.parseInt(target);
-                    DataManager.INSTANCE.getAsns().put(asn, accessType);
+                    DataManager.INSTANCE.updateAsn(asn, accessType);
                 } else {
-                    DataManager.INSTANCE.getNicknames().put(target, accessType);
+                    DataManager.INSTANCE.updateNickname(target, accessType);
                     if (newAccess == EnumAccess.BLACKLIST && targetPlayer != null) {
                         targetPlayer.kick(kickMessage);
                     }

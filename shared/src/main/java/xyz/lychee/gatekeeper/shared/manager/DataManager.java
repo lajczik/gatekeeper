@@ -4,6 +4,12 @@ import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 import com.grack.nanojson.JsonWriter;
+import it.unimi.dsi.fastutil.ints.Int2ByteMap;
+import it.unimi.dsi.fastutil.ints.Int2ByteMaps;
+import it.unimi.dsi.fastutil.ints.Int2ByteOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ByteMap;
+import it.unimi.dsi.fastutil.objects.Object2ByteMaps;
+import it.unimi.dsi.fastutil.objects.Object2ByteOpenHashMap;
 import lombok.Getter;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.objects.AbstractManager;
@@ -18,7 +24,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,12 +31,18 @@ import java.util.logging.Logger;
 public class DataManager extends AbstractManager implements Runnable {
     public static final DataManager INSTANCE = new DataManager();
 
-    private final Map<Integer, Byte> addresses = new ConcurrentHashMap<>();
-    private final Map<Integer, Byte> asns = new ConcurrentHashMap<>();
-    private final Map<String, Byte> nicknames = new ConcurrentHashMap<>();
+    private final Int2ByteMap addresses = Int2ByteMaps.synchronize(new Int2ByteOpenHashMap());
+    private final Int2ByteMap asns = Int2ByteMaps.synchronize(new Int2ByteOpenHashMap());
+    private final Object2ByteMap<String> nicknames = Object2ByteMaps.synchronize(new Object2ByteOpenHashMap<>());
 
     private Logger logger;
     private Path dataPath;
+
+    public DataManager() {
+        this.nicknames.defaultReturnValue((byte) 0);
+        this.addresses.defaultReturnValue((byte) 0);
+        this.asns.defaultReturnValue((byte) 0);
+    }
 
     @Override
     public boolean load(Gatekeeper<?> plugin) throws IOException, JsonParserException {
@@ -41,7 +52,7 @@ public class DataManager extends AbstractManager implements Runnable {
         if (Files.notExists(this.dataPath)) {
             Files.createDirectories(this.dataPath.getParent());
         } else {
-            this.loadFromFile();
+            this.loadDataFile();
         }
         return true;
     }
@@ -58,12 +69,12 @@ public class DataManager extends AbstractManager implements Runnable {
         this.asns.clear();
 
         if (Files.notExists(this.dataPath)) {
-            this.loadFromFile();
+            this.loadDataFile();
         }
         return true;
     }
 
-    private void loadFromFile() throws IOException, JsonParserException {
+    private void loadDataFile() throws IOException, JsonParserException {
         try (InputStream is = Files.newInputStream(this.dataPath)) {
             JsonObject json = JsonParser.object().from(is);
 
@@ -92,18 +103,44 @@ public class DataManager extends AbstractManager implements Runnable {
         }
     }
 
+    public void saveDataFile() {
+        JsonObject json = new JsonObject();
+        json.put("addresses", this.addresses);
+        json.put("asns", this.asns);
+        json.put("nicknames", this.nicknames);
+
+        try {
+            Files.writeString(this.dataPath, JsonWriter.string(json));
+        } catch (IOException ex) {
+            this.logger.log(Level.SEVERE, "Failed to save database file " + this.dataPath.getFileName().toString(), ex);
+        }
+    }
+
+    public void updateAddress(int addressData, byte accessType) {
+        this.addresses.put(addressData, accessType);
+    }
+
+    public void updateAsn(int asn, byte accessType) {
+        this.asns.put(asn, accessType);
+    }
+
+    public void updateNickname(String nickname, byte accessType) {
+        this.nicknames.put(nickname, accessType);
+    }
+
     public boolean updateAndCheckAccess(GeoConnection connection, EnumAccess targetAccess) {
-        Byte access = this.nicknames.get(connection.getName());
-        if (access == null) {
-            access = this.addresses.get(connection.getAddressData());
+        byte access = nicknames.getByte(connection.getName());
+        if (access == 0) {
+            access = addresses.get(connection.getAddressData());
         }
-        if (access == null) {
-            access = this.asns.get(connection.getAsn());
+        if (access == 0) {
+            access = asns.get(connection.getAsn());
         }
-        if (access != null) {
+        if (access != 0) {
             connection.setAccess(EnumAccess.getByType(access));
+            return access == targetAccess.getType();
         }
-        return access != null && access == targetAccess.getType();
+        return false;
     }
 
     public byte resolveAccess(String target) {
@@ -120,15 +157,6 @@ public class DataManager extends AbstractManager implements Runnable {
 
     @Override
     public void run() {
-        JsonObject json = new JsonObject();
-        json.put("addresses", this.addresses);
-        json.put("asns", this.asns);
-        json.put("nicknames", this.nicknames);
-
-        try {
-            Files.writeString(this.dataPath, JsonWriter.string(json));
-        } catch (IOException ex) {
-            this.logger.log(Level.SEVERE, "Failed to save database file " + this.dataPath.getFileName().toString(), ex);
-        }
+        this.saveDataFile();
     }
 }

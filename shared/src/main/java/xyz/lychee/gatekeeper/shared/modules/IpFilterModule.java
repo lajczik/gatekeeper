@@ -1,5 +1,6 @@
 package xyz.lychee.gatekeeper.shared.modules;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import xyz.lychee.gatekeeper.shared.Gatekeeper;
 import xyz.lychee.gatekeeper.shared.manager.GeoipManager;
 import xyz.lychee.gatekeeper.shared.objects.AbstractModule;
@@ -7,11 +8,9 @@ import xyz.lychee.gatekeeper.shared.objects.GeoConnection;
 import xyz.lychee.gatekeeper.shared.util.AddressUtils;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 public class IpFilterModule extends AbstractModule {
-    private final Set<Integer> listedIps = new HashSet<>();
+    private final IntOpenHashSet listedIps = new IntOpenHashSet();
     private boolean list_mode;
 
     public IpFilterModule(Gatekeeper<?> gatekeeper) {
@@ -20,7 +19,7 @@ public class IpFilterModule extends AbstractModule {
 
     @Override
     public boolean handlePreLogin(GeoConnection connection) {
-        return GeoipManager.INSTANCE.getBlacklistedProxies().contains(connection.getAddressData())
+        return GeoipManager.INSTANCE.isBlacklistedProxy(connection.getAddressData())
                 || this.listedIps.contains(connection.getAddressData()) == this.list_mode;
     }
 
