@@ -32,15 +32,11 @@ main:
 
     # Asn sources used for AsnFilter module
     asn_sources:
-      - "https://raw.githubusercontent.com/bountyyfi/bad-asn-list/refs/heads/main/all.txt"
       - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/kind_vpn.txt"
       - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/kind_hosting.txt"
       - "https://raw.githubusercontent.com/O-X-L/risk-db-lists/refs/heads/main/asn/kind_scanner.txt"
       - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/datacenter/ASN.txt"
       - "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/input/vpn/ASN.txt"
-      - "https://raw.githubusercontent.com/NullifiedCode/ASN-Lists/refs/heads/main/all.txt"
-      - "https://www.spamhaus.org/drop/asndrop.json"
-      - "https://raw.githubusercontent.com/brianhama/bad-asn-list/refs/heads/master/bad-asn-list.csv"
 
     # Proxy sources used for IpFilter module
     proxy_sources:
@@ -81,10 +77,6 @@ main:
       - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks4/data.txt"
       - "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/protocols/socks5/data.txt"
       - "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt"
-      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/ips-list.txt"
-      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt"
-      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks4.txt"
-      - "https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks5.txt"
       - "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies.txt"
       - "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/proxy.txt"
       - "https://raw.githubusercontent.com/dpangestuw/Free-Proxy/refs/heads/main/All_proxies.txt"
