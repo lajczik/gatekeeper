@@ -22,72 +22,84 @@ values:
     # https://proxycheck.io/
     #
     # No Key: 100 daily queries.
-    # Free Key 1,000 daily queries.
-    # Paid Key: 10k-512m daily queries.
-    #
-    # Get a free key here: https://proxycheck.io/pricing/
+    # Free Key: 1,000 daily queries.
+    # Paid Key: 10k–512m daily queries.
+    # False positive rate: VERY LOW
     proxycheck_io:
       enabled: true
       url: "https://proxycheck.io/v1/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       condition:
         json: "proxy=yes"
 
-    # https://funkemunky.cc/
-    #
-    # No Key: unlimited queries.
-    funkemunky_cc:
-      enabled: false
-      url: "https://funkemunky.cc/vpn?ip=%address%"
-      condition:
-        json: "accuracyRadius>500"
-
     # https://ip-api.com/
     #
-    # No Key: unlimited queries. (45 req/min)
+    # No Key: unlimited queries (45 req/min).
+    # False positive rate: LOW
     ip-api_com:
       enabled: true
       url: "http://ip-api.com/json/%address%?fields=proxy,hosting"
       condition:
         json: "hosting=true|proxy=true"
 
-    # https://ipapi.is/
-    #
-    # Free Key 1,000 daily queries.
-    # Paid Key: 20k-2m daily queries.
-    ipapi_is:
-      enabled: false
-      url: "https://api.ipapi.is/?q=%address%"
-      condition:
-        json: "is_vpn=true|is_proxy=true|is_abuser=true"
-
-    # https://ipapi.is/
-    #
-    # No Key: unlimited queries.
-    zombiebot_pl:
-      enabled: false
-      url: "https://antivpn.zombiebot.pl/check/%address%"
-      condition:
-        json: "vpn=true"
-
     # https://vpnapi.io/
     #
     # No Key: 100 daily queries.
-    # Free Key 1,000 daily queries.
-    # Paid Key: 10k-200k daily queries.
-    #
-    # Get a free key here: https://vpnapi.io/signup
+    # Free Key: 1,000 daily queries.
+    # Paid Key: 10k–200k daily queries.
+    # False positive rate: LOW
     vpnapi_io:
       enabled: true
       url: "https://vpnapi.io/api/%address%" # If you want to use key, you need to add "?key={API_KEY}"
       condition:
         json: "security:vpn=true|security:proxy=true"
 
+    # https://ipapi.is/
+    #
+    # No Key / Free: 1,000 daily queries.
+    # Paid Key: 20k–2m daily queries.
+    # False positive rate: LOW~MEDIUM (often flags hosting/abuser)
+    ipapi_is:
+      enabled: false
+      url: "https://api.ipapi.is/?q=%address%&key={API_KEY}"
+      condition:
+        json: "is_vpn=true|is_proxy=true|is_abuser=true"
+
+    # https://www.ipqualityscore.com/
+    #
+    # Free Key: 5,000 monthly queries.
+    # Paid Key: 50k–5m monthly queries.
+    # False positive rate: VERY LOW (with strictness=0)
+    ipqualityscore_com:
+      enabled: false
+      url: "https://ipqualityscore.com/api/json/ip/{API_KEY}/%address%?strictness=0&allow_public_access_points=false"
+      condition:
+        json: "fraud_score>75"
+
+    # https://funkemunky.cc/
+    #
+    # No Key: unlimited queries.
+    # False positive rate: MEDIUM~HIGH
+    funkemunky_cc:
+      enabled: false
+      url: "https://funkemunky.cc/vpn?ip=%address%"
+      condition:
+        json: "accuracyRadius>500"
+
+    # https://zombiebot.pl/
+    #
+    # No Key: unlimited queries.
+    # False positive rate: MEDIUM~HIGH
+    zombiebot_pl:
+      enabled: false
+      url: "https://antivpn.zombiebot.pl/check/%address%"
+      condition:
+        json: "vpn=true"
+
     # https://iphub.info/
     #
     # Free Key: 1,000 daily queries.
-    # Paid Key: 10k-600k+ daily queries.
-    #
-    # Get a free key here: https://iphub.info/apiKey/newFree
+    # Paid Key: 10k–600k+ daily queries.
+    # False positive rate: MEDIUM
     iphub_info:
       enabled: false
       url: "https://v2.api.iphub.info/ip/%address%"
@@ -96,26 +108,21 @@ values:
       condition:
         json: "block=1"
 
-    # https://www.ipqualityscore.com/
+    # https://2ip.io/
     #
-    # Free Key: 5,000 monthly queries.
-    # Paid Key: 50k-5m monthly queries.
-    #
-    # Get a free key here: https://www.ipqualityscore.com/create-account
-    ipqualityscore_com:
-      enabled: false
-      url: "https://ipqualityscore.com/api/json/ip/{API_KEY}/%address%?strictness=0&allow_public_access_points=false"
-      condition:
-        json: "fraud_score>75"
-
-    # 2ip.io (JSON, free 10k/month)
+    # Free: 10k monthly queries.
+    # False positive rate: MEDIUM
     2ip_io:
       enabled: false
       url: "https://api.2ip.io/%address%?token={API_KEY}"
       condition:
         json: "asn:hosting=true"
 
-    # AbuseIPDB (JSON, free 1k/day)
+    # https://www.abuseipdb.com/
+    #
+    # Free Key: 1,000 daily queries.
+    # Paid: higher limits.
+    # False positive rate: MEDIUM (more abuse score than pure VPN detection)
     abuseipdb_com:
       enabled: false
       url: "https://api.abuseipdb.com/api/v2/check?ipAddress=%address%"
@@ -125,7 +132,10 @@ values:
       condition:
         json: "data.isTor=true|data.abuseConfidenceScore>=75"
 
-    # ANTIVPN IO (PAID, JSON)
+    # https://antivpn.io/ (PAID)
+    #
+    # Paid only.
+    # False positive rate: LOW~MEDIUM
     antivpn_io:
       enabled: false
       url: "https://connection.antivpn.io/api/check?ip=%address%"
@@ -134,21 +144,30 @@ values:
       condition:
         json: "VPN=true"
 
-    # BanProxy (JSON, free 50/min)
+    # https://banproxy.com/
+    #
+    # Free: ~50 req/min.
+    # False positive rate: MEDIUM
     banproxy_com:
       enabled: false
       url: "https://banproxy.com/api/%address%/{API_KEY}"
       condition:
         json: "proxy=true|hosting=true"
 
-    # BlackBox
+    # https://blackbox.ipinfo.app/
+    #
+    # Free / limited.
+    # False positive rate: MEDIUM~HIGH
     blackbox_ipinfo:
       enabled: false
       url: "https://blackbox.ipinfo.app/lookup/%address%"
       condition:
         text: "equals=Y"
 
-    # Focsec (PAID, JSON)
+    # https://focsec.com/ (PAID)
+    #
+    # Paid only.
+    # False positive rate: LOW
     focsec_com:
       enabled: false
       url: "https://api.focsec.com/v1/ip/%address%"
@@ -157,20 +176,30 @@ values:
       condition:
         json: "is_vpn=true|is_proxy=true|is_tor=true|is_datacenter=true"
 
-    # FreeIPAPI (JSON, free 60/min without key)
+    # https://freeipapi.com/
+    #
+    # Free: 60 req/min (no key).
+    # False positive rate: MEDIUM
     freeipapi_com:
       enabled: false
       url: "https://freeipapi.com/api/json/%address%"
       condition:
         json: "isProxy=true"
 
-    # GetIPIntel (JSON, requires email as key)
+    # https://getipintel.net/
+    #
+    # Requires email as key. Free: ~500 daily.
+    # False positive rate: MEDIUM
     getipintel_net:
       enabled: false
       url: "https://check.getipintel.net/check.php?ip=%address%&contact={API_KEY}&flags=m&format=json"
       condition:
         json: "result=true"
 
+    # https://greip.io/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     greip_io:
       enabled: false
       url: "https://greipapi.com/lookup/ip/threats?ip=%address%"
@@ -179,18 +208,30 @@ values:
       condition:
         json: "data:threats:isProxy=true|data:threats:isRelay=true|data:threats:isTor=true|data:threats:isHosting=true"
 
+    # https://ip-check.net/
+    #
+    # Free / limited.
+    # False positive rate: MEDIUM~HIGH
     ip_check_net:
       enabled: false
       url: "https://ip-check.net/api/proxy-detect.php?ip=%address%"
       condition:
         text: "equals=TRUE"
 
+    # https://www.ip2location.io/
+    #
+    # Free Key: limited, Paid higher limits.
+    # False positive rate: LOW~MEDIUM
     ip2location_io:
       enabled: false
       url: "https://api.ip2location.io/?ip=%address%&format=json&key={API_KEY}"
       condition:
         json: "is_proxy=true|proxy:is_vpn=true|proxy:is_tor=true|proxy:is_public_proxy=true|proxy:is_data_center=true"
 
+    # https://ipdetective.io/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     ipdetective_io:
       enabled: false
       url: "https://api.ipdetective.io/ip/%address%?info=true"
@@ -199,12 +240,20 @@ values:
       condition:
         json: "type=vpn|type=datacenter|type=bot|type=proxy"
 
+    # https://ipgeolocation.io/
+    #
+    # Free Key: 1,000 daily queries.
+    # False positive rate: LOW~MEDIUM
     ipgeolocation_io:
       enabled: false
       url: "https://api.ipgeolocation.io/ipgeo?apiKey={API_KEY}&ip=%address%"
       condition:
         json: "security:is_tor=true|security:is_proxy=true|security:is_cloud_provider=true|security:is_known_attacker=true|security:is_anonymous=true"
 
+    # https://www.iphunter.info/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     iphunter_info:
       enabled: false
       url: "https://www.iphunter.info:8082/v1/ip/%address%"
@@ -213,48 +262,82 @@ values:
       condition:
         json: "data:block=true"
 
+    # https://iplocate.io/
+    #
+    # No Key: 50 daily queries.
+    # Free Key: 1,000 daily queries.
+    # Paid: 100k–5m+ monthly.
+    # False positive rate: LOW
     iplocate_io:
       enabled: true
       url: "https://iplocate.io/api/lookup/%address%" # If you want to use key, you need to add "?apikey={API_KEY}"
       condition:
         json: "privacy:is_abuser=true|privacy:is_hosting=true|privacy:is_proxy=true|privacy:is_tor=true|privacy:is_vpn=true"
 
+    # https://ipquery.io/
+    #
+    # No Key: unlimited (fair use / public free tier).
+    # False positive rate: LOW~MEDIUM
     ipquery_io:
       enabled: true
       url: "https://api.ipquery.io/%address%?format=json"
       condition:
         json: "risk:is_vpn=true|risk:is_tor=true|risk:is_datacenter=true|risk:is_proxy=true"
 
+    # https://iprisk.info/
+    #
+    # Free / limited.
+    # False positive rate: MEDIUM
     iprisk_info:
       enabled: false
       url: "https://api.iprisk.info/v1/%address%"
       condition:
         json: "vpn=true|data_center=true|open_proxy=true"
 
+    # https://ipstack.com/
+    #
+    # Free Key: very low limit, Paid higher limits.
+    # False positive rate: LOW~MEDIUM
     ipstack_com:
       enabled: false
       url: "https://api.ipstack.com/%address%?access_key={API_KEY}&security=1"
       condition:
         json: "security:is_proxy=true|security:is_tor=true|security:hosting_facility=true"
 
+    # https://isproxyip.com/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     isproxyip_com:
       enabled: false
       url: "https://api.isproxyip.com/v1/check.php?key={API_KEY}&ip=%address%&format=json"
       condition:
         json: "proxy=true"
 
+    # https://marvinmc.dev/
+    #
+    # Free / limited.
+    # False positive rate: MEDIUM~HIGH
     marvinmc_dev:
       enabled: false
       url: "https://marvinmc.dev/proxy?ip=%address%"
       condition:
         text: "equals=true"
 
+    # https://negativity.fr/
+    #
+    # Free / limited.
+    # False positive rate: MEDIUM
     negativity_fr:
       enabled: false
       url: "https://api.negativity.fr/ip/%address%"
       condition:
         json: "proxy=1|vpn=1|hosting=1"
 
+    # https://noproxy.okaeri.cloud/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     noproxy_okaeri:
       enabled: false
       url: "https://api.noproxy.okaeri.cloud/v1/%address%"
@@ -263,37 +346,60 @@ values:
       condition:
         json: "score:noproxy>=75|score:abuseipdb>=75"
 
+    # https://protectcord.com/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     protectcord_com:
       enabled: false
       url: "https://api.protectcord.com/checkip/%address%?key={API_KEY}"
       condition:
         json: "is_datacenter=true|is_tor=true|is_proxy=true|is_vpn=true|is_abuser=true"
 
+    # https://proxyradar.io/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     proxyradar_io:
       enabled: false
       url: "https://proxyradar.io/v1/check?key={API_KEY}&ip=%address%&format=json"
       condition:
         json: "proxy=true"
 
+    # https://www.rayzs.de/
+    #
+    # Free / limited.
+    # False positive rate: MEDIUM~HIGH
     rayzs_de:
       enabled: false
       url: "https://www.rayzs.de/provpn/api/proxy.php/?a=%address%"
       condition:
         text: "equals=true"
 
-    # SkyDB (JSON, very slow)
+    # https://ipcheck.skydb.de/ (SkyDB)
+    #
+    # Free, but very slow.
+    # False positive rate: MEDIUM~HIGH
     skydb_de:
       enabled: false
       url: "http://ipcheck.skydb.de/getinfo?ip=%address%"
       condition:
         json: "Hosting=true|Proxy=true|VPN=true|TOR=true"
 
+    # https://veloraplugins.online/
+    #
+    # Requires license key.
+    # False positive rate: MEDIUM
     veloraplugins_online:
       enabled: false
       url: "https://veloraplugins.online/check/%address%?license={API_KEY}"
       condition:
         json: "score>=75|decision=DENY"
 
+    # https://vpnblocker.net/
+    #
+    # Requires key.
+    # False positive rate: MEDIUM
     vpnblocker_net:
       enabled: false
       url: "https://api.vpnblocker.net/v2/json/%address%"
@@ -302,6 +408,10 @@ values:
       condition:
         json: "host-ip=true"
 
+    # https://api.zowi.gay/
+    #
+    # No Key / Free limited, Paid higher.
+    # False positive rate: MEDIUM
     zowicentral_gay:
       enabled: false
       url: "https://api.zowi.gay/%address%" # If you want to use key, you need to add ?key={API_KEY}
