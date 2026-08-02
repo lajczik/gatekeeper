@@ -12,7 +12,7 @@ values:
   # Maximum duration in ms of checking a single API
   timeout: 2500
   # Instead of blocking access to a single IP address, the internet provider will be blocked
-  blacklist_asn: true
+  blacklist_asn: false
   # Number of requests sent to different API providers (proxy/VPN check)
   checks_per_player: 3
   # Minimum APIs that must confirm that an IP is a VPN/Proxy
