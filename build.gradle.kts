@@ -21,6 +21,8 @@ tasks {
         archiveClassifier.set("")
 
         relocate("dev.dejvokep.boostedyaml", "xyz.lychee.gatekeeper.libs.yaml")
+        relocate("it.unimi.dsi.fastutil", "xyz.lychee.gatekeeper.libs.fastutil")
+        relocate("com.grack.nanojson", "xyz.lychee.gatekeeper.libs.nanojson")
     }
 }
 
