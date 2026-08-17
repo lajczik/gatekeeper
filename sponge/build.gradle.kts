@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly(project(":shared"))
+    implementation(project(":shared"))
     compileOnly("org.spongepowered:spongeapi:12.0.0")
 }
 
