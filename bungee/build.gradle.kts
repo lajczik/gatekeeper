@@ -10,7 +10,6 @@ dependencies {
 
 tasks {
     shadowJar {
-        minimize()
     }
     processResources {
         filesMatching("**/bungee.yml") {

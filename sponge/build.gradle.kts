@@ -10,7 +10,6 @@ dependencies {
 
 tasks {
     shadowJar {
-        minimize()
     }
     processResources {
         filesMatching("**/sponge_plugins.json") {

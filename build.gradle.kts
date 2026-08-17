@@ -19,7 +19,6 @@ tasks {
     shadowJar {
         archiveBaseName.set("Gatekeeper")
         archiveClassifier.set("")
-        destinationDirectory.set(file("C:/Users/lajczi/Desktop/testowy/plugins"))
 
         relocate("dev.dejvokep.boostedyaml", "xyz.lychee.gatekeeper.libs.yaml")
     }

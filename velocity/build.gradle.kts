@@ -11,7 +11,6 @@ dependencies {
 
 tasks {
     shadowJar {
-        minimize()
     }
     processResources {
         filesMatching("**/velocity-plugin.json") {
