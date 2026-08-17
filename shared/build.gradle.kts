@@ -9,5 +9,6 @@ dependencies {
 
 tasks {
     shadowJar {
+        minimize()
     }
 }

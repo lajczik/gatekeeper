@@ -4,12 +4,13 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":shared"))
+    compileOnly(project(":shared"))
     compileOnly("net.md-5:bungeecord-api:1.21-R0.4")
 }
 
 tasks {
     shadowJar {
+        minimize()
     }
     processResources {
         filesMatching("**/bungee.yml") {

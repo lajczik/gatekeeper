@@ -4,12 +4,13 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":shared"))
+    compileOnly(project(":shared"))
     compileOnly("org.spongepowered:spongeapi:12.0.0")
 }
 
 tasks {
     shadowJar {
+        minimize()
     }
     processResources {
         filesMatching("**/sponge_plugins.json") {
