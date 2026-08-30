@@ -10,5 +10,7 @@ dependencies {
 tasks {
     shadowJar {
         minimize()
+        relocate("it.unimi.dsi.fastutil", "xyz.lychee.gatekeeper.libs.fastutil")
+        relocate("com.grack.nanojson", "xyz.lychee.gatekeeper.libs.nanojson")
     }
 }

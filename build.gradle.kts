@@ -19,9 +19,10 @@ tasks {
     shadowJar {
         archiveBaseName.set("Gatekeeper")
         archiveClassifier.set("")
-        destinationDirectory.set(file("C:/Users/lajczi/Desktop/testowy/plugins"))
 
         relocate("dev.dejvokep.boostedyaml", "xyz.lychee.gatekeeper.libs.yaml")
+        relocate("it.unimi.dsi.fastutil", "xyz.lychee.gatekeeper.libs.fastutil")
+        relocate("com.grack.nanojson", "xyz.lychee.gatekeeper.libs.nanojson")
     }
 }
 
