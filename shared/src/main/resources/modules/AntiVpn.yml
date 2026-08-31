@@ -17,6 +17,8 @@ values:
   checks_per_player: 3
   # Minimum APIs that must confirm that an IP is a VPN/Proxy
   block_threshold: 2
+  # Provider exclusion time in seconds after HTTP 429 encounter
+  rate_limit_cooldown: 3600
 
   checks:
     # https://proxycheck.io/
