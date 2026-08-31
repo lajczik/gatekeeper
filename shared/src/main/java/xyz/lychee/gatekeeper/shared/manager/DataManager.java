@@ -68,7 +68,7 @@ public class DataManager extends AbstractManager implements Runnable {
         this.nicknames.clear();
         this.asns.clear();
 
-        if (Files.notExists(this.dataPath)) {
+        if (Files.exists(this.dataPath)) {
             this.loadDataFile();
         }
         return true;
