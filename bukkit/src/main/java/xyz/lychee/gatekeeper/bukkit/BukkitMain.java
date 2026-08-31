@@ -135,10 +135,10 @@ public class BukkitMain extends JavaPlugin implements Gatekeeper<String>, Listen
         }
 
         @Override
-        public String color(String text, boolean prefix) {
+        public String color(String text, PrefixType prefixType) {
             String colored = applyColors(text);
 
-            if (prefix && ConfigManager.INSTANCE.getPrefix() instanceof String) {
+            if (prefixType != PrefixType.NULL) {
                 return colored.replace("%prefix%", (String) ConfigManager.INSTANCE.getPrefix());
             }
 

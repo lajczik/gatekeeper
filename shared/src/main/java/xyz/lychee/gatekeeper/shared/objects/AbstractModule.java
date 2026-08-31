@@ -76,7 +76,7 @@ public abstract class AbstractModule {
         this.logMessage = log.isEmpty() ? null : log;
 
         String kick = String.join("\n", this.yamlDocument.getStringList("kick", Collections.emptyList()));
-        this.kickMessage = this.gatekeeper.language().color(kick, true);
+        this.kickMessage = this.gatekeeper.language().color(kick, AbstractLang.PrefixType.PLAIN);
 
         return this.load();
     }

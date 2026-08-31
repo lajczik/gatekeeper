@@ -20,7 +20,7 @@ public abstract class CommandPlayer<T> {
                 str = str.replaceFirst("\\{}", placeholder);
             }
 
-            message = lang.color(str, true);
+            message = lang.color(str, AbstractLang.PrefixType.HOVERED);
         } else {
             message = lang.getComponents().get(key);
         }

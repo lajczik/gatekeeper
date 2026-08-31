@@ -148,12 +148,14 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
         }
 
         @Override
-        public BaseComponent color(String text, boolean prefix) {
+        public BaseComponent color(String text, PrefixType prefixType) {
             String colored = this.applyColors(text);
 
-            if (prefix && ConfigManager.INSTANCE.getPrefix() instanceof BaseComponent) {
+            if (prefixType != PrefixType.NULL) {
+                ConfigManager configManager = ConfigManager.INSTANCE;
+                BaseComponent prefix = (BaseComponent) (prefixType == PrefixType.PLAIN ? configManager.getPlainPrefix() : configManager.getPrefix());
+
                 TextComponent root = new TextComponent();
-                BaseComponent p = (BaseComponent) ConfigManager.INSTANCE.getPrefix();
                 String[] parts = colored.split("%prefix%", -1);
 
                 for (int i = 0; i < parts.length; i++) {
@@ -167,7 +169,7 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
                         }
                     }
                     if (i < parts.length - 1) {
-                        root.addExtra(p);
+                        root.addExtra(prefix);
                     }
                 }
 
@@ -187,11 +189,11 @@ public class BungeeMain extends Plugin implements Gatekeeper<BaseComponent>, Lis
 
         @Override
         public BaseComponent hoverAndOpenUrl(String text, String hoverText, String url) {
-            BaseComponent component = this.color(text, false);
+            BaseComponent component = this.color(text, PrefixType.NULL);
             component.setHoverEvent(
                     new HoverEvent(
                             HoverEvent.Action.SHOW_TEXT,
-                            new BaseComponent[]{this.color(hoverText, false)}
+                            new BaseComponent[]{this.color(hoverText, PrefixType.NULL)}
                     )
             );
             component.setClickEvent(

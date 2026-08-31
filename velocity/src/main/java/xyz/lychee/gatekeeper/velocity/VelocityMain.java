@@ -13,7 +13,6 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -163,13 +162,16 @@ public class VelocityMain implements Gatekeeper<Component> {
         }
 
         @Override
-        public Component color(String text, boolean prefix) {
+        public Component color(String text, PrefixType prefixType) {
             Component deserialized = serializer.deserialize(text);
-            if (prefix && ConfigManager.INSTANCE.getPrefix() instanceof ComponentLike) {
+            if (prefixType != PrefixType.NULL) {
+                ConfigManager configManager = ConfigManager.INSTANCE;
+                Component prefix = (Component) (prefixType == PrefixType.PLAIN ? configManager.getPlainPrefix() : configManager.getPrefix());
+
                 return deserialized
                         .replaceText(TextReplacementConfig.builder()
                                 .matchLiteral("%prefix%")
-                                .replacement((ComponentLike) ConfigManager.INSTANCE.getPrefix())
+                                .replacement(prefix)
                                 .build()
                         );
             }
@@ -178,8 +180,8 @@ public class VelocityMain implements Gatekeeper<Component> {
 
         @Override
         public Component hoverAndOpenUrl(String text, String hoverText, String url) {
-            return this.color(text, false)
-                    .hoverEvent(HoverEvent.showText(this.color(hoverText, false)))
+            return this.color(text, PrefixType.NULL)
+                    .hoverEvent(HoverEvent.showText(this.color(hoverText, PrefixType.NULL)))
                     .clickEvent(ClickEvent.openUrl(url));
         }
     }

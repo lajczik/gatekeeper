@@ -54,7 +54,7 @@ public abstract class AbstractLang<T> {
             collect(this.yaml, "", keys);
             for (String key : keys) {
                 String text = this.yaml.isList(key) ? String.join("\n", this.yaml.getStringList(key)) : this.yaml.getString(key);
-                this.components.put(key, this.color(text, true));
+                this.components.put(key, this.color(text, PrefixType.HOVERED));
             }
         } catch (Exception ex) {
             this.gatekeeper.logger().log(Level.SEVERE, "Failed to load language", ex);
@@ -74,7 +74,7 @@ public abstract class AbstractLang<T> {
         }
     }
 
-    public abstract T color(String text, boolean prefix);
+    public abstract T color(String text, AbstractLang.PrefixType prefixType);
 
     public abstract T hoverAndOpenUrl(String text, String hoverText, String url);
 
@@ -87,7 +87,7 @@ public abstract class AbstractLang<T> {
                 message = message.replaceFirst("\\{}", placeholder);
             }
 
-            return this.color(message, true);
+            return this.color(message, PrefixType.HOVERED);
         }
 
         return this.getComponent(key);
@@ -118,5 +118,11 @@ public abstract class AbstractLang<T> {
             text = text.replace(entry.getKey(), entry.getValue());
         }
         return text;
+    }
+
+    public enum PrefixType {
+        NULL,
+        PLAIN,
+        HOVERED;
     }
 }

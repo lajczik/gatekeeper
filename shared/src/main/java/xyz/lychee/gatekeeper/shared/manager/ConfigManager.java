@@ -17,6 +17,7 @@ public class ConfigManager extends AbstractManager {
     public static final ConfigManager INSTANCE = new ConfigManager();
     private YamlDocument yaml;
     private Object prefix;
+    private Object plainPrefix;
 
     @Override
     public boolean load(Gatekeeper<?> plugin) throws Exception {
@@ -48,6 +49,8 @@ public class ConfigManager extends AbstractManager {
     private void updatePrefix(Gatekeeper<?> plugin) {
         String prefixString = AbstractLang.applyReplacements(this.yaml.getString("main.prefix"));
 
+        this.plainPrefix = plugin.language().color(prefixString, AbstractLang.PrefixType.NULL);
+
         if (this.yaml.getBoolean("main.prefix_hover")) {
             this.prefix = plugin.language().hoverAndOpenUrl(
                     prefixString,
@@ -55,7 +58,7 @@ public class ConfigManager extends AbstractManager {
                     "https://modrinth.com/plugin/gatekeeper-mc/"
             );
         } else {
-            this.prefix = plugin.language().color(prefixString, false);
+            this.prefix = this.plainPrefix;
         }
     }
 }

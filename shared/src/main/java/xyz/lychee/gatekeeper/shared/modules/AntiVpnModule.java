@@ -11,7 +11,10 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -153,9 +156,8 @@ public class AntiVpnModule extends AbstractModule {
 
                     if (statusCode == 429) {
                         provider.applyRateLimit(this.rate_limit_cooldown);
-                        getGatekeeper().logger().log(Level.WARNING,
-                                "Provider '" + provider.name + "' (ID: " + provider.id + ") hit rate-limit (HTTP 429). Cooldown: "
-                                        + (this.rate_limit_cooldown / 1000L) + "s");
+                        getGatekeeper().logger()
+                                .warning("Provider '" + provider.name + "' (ID: " + provider.id + ") hit rate-limit (HTTP 429). Cooldown: " + this.rate_limit_cooldown + "ms");
                     }
 
                     return false;
